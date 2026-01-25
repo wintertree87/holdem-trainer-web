@@ -1,0 +1,2318 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>텍사스 홀덤 프리플랍 트레이너</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+            color: #ffd700;
+            font-size: 24px;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 5px;
+        }
+
+        .glossary-btn {
+            padding: 6px 12px;
+            background: #374151;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .glossary-btn:hover {
+            background: #4b5563;
+        }
+
+        /* 용어사전 모달 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: #1f2937;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #374151;
+            position: sticky;
+            top: 0;
+            background: #1f2937;
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            color: #ffd700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: white;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .glossary-category {
+            margin-bottom: 20px;
+        }
+
+        .glossary-category h3 {
+            color: #fbbf24;
+            font-size: 14px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #374151;
+        }
+
+        .glossary-item {
+            margin-bottom: 12px;
+        }
+
+        .glossary-term {
+            color: #60a5fa;
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .glossary-def {
+            color: #d1d5db;
+            font-size: 12px;
+            margin-top: 3px;
+            line-height: 1.5;
+        }
+
+        /* 툴팁 */
+        [data-tooltip] {
+            position: relative;
+        }
+
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 5px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            max-width: 200px;
+            white-space: normal;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid #374151;
+            pointer-events: none;
+        }
+
+        [data-tooltip]:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #374151;
+            z-index: 101;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+
+        /* 스코어 보드 */
+        .scoreboard {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 15px;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .score-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .score-correct { color: #4ade80; }
+        .score-wrong { color: #f87171; }
+        .score-total { color: #60a5fa; }
+
+        /* 모드 선택 */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            background: #374151;
+            border: 2px solid #4b5563;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .mode-btn:hover {
+            background: #4b5563;
+        }
+
+        .mode-btn.active {
+            background: #fbbf24;
+            border-color: #fbbf24;
+            color: black;
+        }
+
+        /* 게임 영역 */
+        .game-area {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .scenario-display {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+
+        .scenario-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .scenario-text {
+            font-size: 16px;
+            font-weight: bold;
+            color: #fbbf24;
+            margin-top: 5px;
+        }
+
+        .position-info {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 5px;
+        }
+
+        /* 카드 표시 */
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            width: 80px;
+            height: 110px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .card.hearts, .card.diamonds {
+            color: #dc2626;
+        }
+
+        .card.spades, .card.clubs {
+            color: #1f2937;
+        }
+
+        .card-rank {
+            font-size: 28px;
+        }
+
+        .card-suit {
+            font-size: 32px;
+        }
+
+        .hand-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #d1d5db;
+        }
+
+        /* 버튼들 */
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-raise { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; }
+        .btn-call { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .btn-fold { background: linear-gradient(135deg, #6b7280, #4b5563); color: white; }
+        .btn-3bet { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .btn-4bet { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .btn-next { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; display: none; }
+
+        /* 결과 표시 */
+        .result {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .result.correct {
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid #22c55e;
+        }
+
+        .result.wrong {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+        }
+
+        .result-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .result.correct .result-title { color: #4ade80; }
+        .result.wrong .result-title { color: #f87171; }
+
+        .result-explanation {
+            color: #d1d5db;
+            line-height: 1.5;
+            font-size: 13px;
+        }
+
+        /* 핸드레인지 차트 */
+        .chart-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 15px;
+            display: none;
+        }
+
+        .chart-section.visible {
+            display: block;
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #fbbf24;
+            font-size: 14px;
+        }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(13, 1fr);
+            gap: 2px;
+            max-width: 550px;
+            margin: 0 auto;
+        }
+
+        .chart-cell {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 2px;
+            background: #374151;
+            color: #6b7280;
+        }
+
+        .chart-cell.raise, .chart-cell.value { background: #22c55e; color: white; }
+        .chart-cell.bluff { background: #ef4444; color: white; }
+        .chart-cell.call { background: #3b82f6; color: white; }
+        .chart-cell.current { box-shadow: 0 0 0 2px #fbbf24; z-index: 1; }
+
+        /* 범례 */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 11px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+        }
+
+        .legend-raise { background: #22c55e; }
+        .legend-bluff { background: #ef4444; }
+        .legend-call { background: #3b82f6; }
+        .legend-fold { background: #374151; }
+
+        /* 포지션 선택 */
+        .position-selector {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .pos-btn {
+            padding: 6px 12px;
+            background: #374151;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .pos-btn:hover { background: #4b5563; }
+        .pos-btn.active { background: #fbbf24; color: black; }
+
+        .keyboard-hint {
+            text-align: center;
+            font-size: 10px;
+            color: #6b7280;
+            margin-top: 10px;
+        }
+
+        /* 플랍 보드 */
+        .board-section {
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        .board-section.visible {
+            display: block;
+        }
+
+        .board-label {
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .board-cards {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .board-card {
+            width: 55px;
+            height: 75px;
+            background: white;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+
+        .board-card.hearts, .board-card.diamonds {
+            color: #dc2626;
+        }
+
+        .board-card.spades, .board-card.clubs {
+            color: #1f2937;
+        }
+
+        .board-card .card-rank {
+            font-size: 20px;
+        }
+
+        .board-card .card-suit {
+            font-size: 22px;
+        }
+
+        .board-texture {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .texture-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin: 2px;
+            font-size: 11px;
+        }
+
+        .hand-strength {
+            text-align: center;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+        }
+
+        .strength-label {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .strength-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fbbf24;
+        }
+
+        /* 포커 테이블 */
+        .table-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+            padding: 40px 50px;
+        }
+
+        .poker-table {
+            position: relative;
+            width: 320px;
+            height: 180px;
+            background: linear-gradient(145deg, #166534, #15803d);
+            border-radius: 90px;
+            border: 8px solid #78350f;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.3), 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .table-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.15);
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .seat {
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #374151;
+            border: 2px solid #4b5563;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 8px;
+            font-weight: bold;
+            color: #9ca3af;
+            transition: all 0.3s;
+            transform: translate(-50%, -50%);
+        }
+
+        .seat.hero {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border-color: #60a5fa;
+            color: white;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+            z-index: 10;
+        }
+
+        .seat.villain {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border-color: #f87171;
+            color: white;
+            box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+            z-index: 9;
+        }
+
+        .seat.folded {
+            opacity: 0.35;
+        }
+
+        .seat-label {
+            position: absolute;
+            font-size: 8px;
+            color: #9ca3af;
+            white-space: nowrap;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* 9-max 테이블 좌석 위치 - 타원 둘레 균등 배치 (40도 간격) */
+        /* 중심: 160, 90 / 반경: 175(가로), 110(세로) */
+        /* 12시(270°)부터 시계방향: UTG -> UTG+1 -> UTG+2 -> LJ -> HJ -> CO -> BTN -> SB -> BB */
+        .seat-utg { left: 160px; top: -20px; }
+        .seat-utg1 { left: 272px; top: 6px; }
+        .seat-utg2 { left: 332px; top: 71px; }
+        .seat-lj { left: 312px; top: 145px; }
+        .seat-hj { left: 220px; top: 193px; }
+        .seat-co { left: 100px; top: 193px; }
+        .seat-btn { left: 8px; top: 145px; }
+        .seat-sb { left: -12px; top: 71px; }
+        .seat-bb { left: 48px; top: 6px; }
+
+        /* 우측/좌측 좌석은 라벨을 옆에 배치 */
+        .seat-utg2 .seat-label { top: 50%; left: auto; right: -28px; transform: translateY(-50%); }
+        .seat-lj .seat-label { top: 50%; left: auto; right: -20px; transform: translateY(-50%); }
+        .seat-sb .seat-label { top: 50%; left: -24px; right: auto; transform: translateY(-50%); }
+        .seat-bb .seat-label { top: -14px; }
+
+        .table-legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 8px;
+            font-size: 10px;
+        }
+
+        .legend-hero {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-hero::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .legend-villain {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-villain::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        @media (max-width: 600px) {
+            .card { width: 65px; height: 90px; }
+            .card-rank { font-size: 22px; }
+            .card-suit { font-size: 26px; }
+            .btn { padding: 10px 15px; font-size: 12px; }
+            .chart-cell { font-size: 7px; }
+
+            .table-container {
+                padding: 35px 40px;
+            }
+
+            .poker-table {
+                width: 260px;
+                height: 146px;
+            }
+
+            .seat {
+                width: 28px;
+                height: 28px;
+                font-size: 7px;
+            }
+
+            .seat-label { font-size: 7px; }
+
+            /* 모바일용 좌석 위치 (비율 유지) */
+            .seat-utg { left: 130px; top: -16px; }
+            .seat-utg1 { left: 221px; top: 5px; }
+            .seat-utg2 { left: 270px; top: 58px; }
+            .seat-lj { left: 253px; top: 118px; }
+            .seat-hj { left: 179px; top: 157px; }
+            .seat-co { left: 81px; top: 157px; }
+            .seat-btn { left: 7px; top: 118px; }
+            .seat-sb { left: -10px; top: 58px; }
+            .seat-bb { left: 39px; top: 5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <h1>🃏 홀덤 트레이너</h1>
+            <button class="glossary-btn" onclick="openGlossary()">📖 용어사전</button>
+        </div>
+        <p class="subtitle">PokerCoaching 차트 기반 | 100bb 딥</p>
+
+        <div class="scoreboard">
+            <div class="score-item">
+                <div class="score-value score-correct" id="correctCount">0</div>
+                <div class="score-label">정답</div>
+            </div>
+            <div class="score-item">
+                <div class="score-value score-wrong" id="wrongCount">0</div>
+                <div class="score-label">오답</div>
+            </div>
+            <div class="score-item">
+                <div class="score-value score-total" id="accuracy">0%</div>
+                <div class="score-label">정답률</div>
+            </div>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="rfi" data-tooltip="Raise First In - 첫 번째로 레이즈하기">RFI (오픈)</button>
+            <button class="mode-btn" data-mode="facing" data-tooltip="상대방이 먼저 레이즈했을 때 대응">Facing RFI</button>
+            <button class="mode-btn" data-mode="vs3bet" data-tooltip="내가 오픈 후 상대가 리레이즈했을 때">vs 3bet</button>
+            <button class="mode-btn" data-mode="cbet" data-tooltip="플랍에서 Continuation Bet 연습">C-bet</button>
+        </div>
+
+        <div class="position-selector" id="positionSelector"></div>
+
+        <div class="game-area">
+            <!-- 포커 테이블 -->
+            <div class="table-container">
+                <div class="poker-table">
+                    <div class="table-center">HOLDEM</div>
+                    <div class="seat seat-utg" data-pos="UTG">
+                        <span class="seat-label">UTG</span>
+                        UTG
+                    </div>
+                    <div class="seat seat-utg1" data-pos="UTG+1">
+                        <span class="seat-label">UTG+1</span>
+                        +1
+                    </div>
+                    <div class="seat seat-utg2" data-pos="UTG+2">
+                        <span class="seat-label">UTG+2</span>
+                        +2
+                    </div>
+                    <div class="seat seat-lj" data-pos="LJ">
+                        <span class="seat-label">LJ</span>
+                        LJ
+                    </div>
+                    <div class="seat seat-hj" data-pos="HJ">
+                        <span class="seat-label">HJ</span>
+                        HJ
+                    </div>
+                    <div class="seat seat-co" data-pos="CO">
+                        <span class="seat-label">CO</span>
+                        CO
+                    </div>
+                    <div class="seat seat-btn" data-pos="BTN">
+                        <span class="seat-label">BTN</span>
+                        BTN
+                    </div>
+                    <div class="seat seat-sb" data-pos="SB">
+                        <span class="seat-label">SB</span>
+                        SB
+                    </div>
+                    <div class="seat seat-bb" data-pos="BB">
+                        <span class="seat-label">BB</span>
+                        BB
+                    </div>
+                </div>
+            </div>
+            <div class="table-legend">
+                <div class="legend-hero">나 (Hero)</div>
+                <div class="legend-villain">상대 (Villain)</div>
+            </div>
+
+            <div class="scenario-display">
+                <div class="scenario-label">시나리오</div>
+                <div class="scenario-text" id="scenarioText">당신은 UTG에서 오픈할 차례입니다</div>
+                <div class="position-info" id="positionInfo">Under The Gun - 가장 먼저 행동</div>
+            </div>
+
+            <!-- 보드 카드 (C-bet 모드) -->
+            <div class="board-section" id="boardSection">
+                <div class="board-label">FLOP</div>
+                <div class="board-cards">
+                    <div class="board-card" id="flop1">
+                        <div class="card-rank">A</div>
+                        <div class="card-suit">♠</div>
+                    </div>
+                    <div class="board-card" id="flop2">
+                        <div class="card-rank">K</div>
+                        <div class="card-suit">♥</div>
+                    </div>
+                    <div class="board-card" id="flop3">
+                        <div class="card-rank">7</div>
+                        <div class="card-suit">♦</div>
+                    </div>
+                </div>
+                <div class="board-texture" id="boardTexture"></div>
+            </div>
+
+            <div class="cards-container">
+                <div class="card" id="card1">
+                    <div class="card-rank">A</div>
+                    <div class="card-suit">♠</div>
+                </div>
+                <div class="card" id="card2">
+                    <div class="card-rank">K</div>
+                    <div class="card-suit">♥</div>
+                </div>
+            </div>
+
+            <div class="hand-info" id="handInfo">AKo (Ace-King Offsuit)</div>
+            <div class="hand-strength" id="handStrength" style="display:none;">
+                <div class="strength-label">핸드 강도</div>
+                <div class="strength-value" id="strengthValue">Top Pair Top Kicker</div>
+            </div>
+
+            <div class="buttons" id="actionButtons">
+                <button class="btn btn-raise" onclick="makeDecision('raise')">레이즈 (R)</button>
+                <button class="btn btn-fold" onclick="makeDecision('fold')">폴드 (F)</button>
+            </div>
+            <button class="btn btn-next" id="nextBtn" onclick="newHand()">다음 핸드 (Space)</button>
+
+            <div class="result" id="result">
+                <div class="result-title" id="resultTitle">정답!</div>
+                <div class="result-explanation" id="resultExplanation"></div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <h3 class="chart-title" id="chartTitle">UTG 오픈 레이즈 레인지</h3>
+            <div class="chart-grid" id="chartGrid"></div>
+            <div class="legend" id="legend">
+                <div class="legend-item"><div class="legend-color legend-raise"></div><span>레이즈</span></div>
+                <div class="legend-item"><div class="legend-color legend-fold"></div><span>폴드</span></div>
+            </div>
+            <div class="keyboard-hint">단축키: R=레이즈, C=콜, F=폴드, 3=3bet, 4=4bet, B=C-bet, X=체크, Space=다음</div>
+        </div>
+    </div>
+
+    <script>
+        // 카드 관련 상수
+        const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+        const SUITS = ['♠', '♥', '♦', '♣'];
+        const SUIT_NAMES = { '♠': 'spades', '♥': 'hearts', '♦': 'diamonds', '♣': 'clubs' };
+
+        // ========================================
+        // RFI 레인지 (PokerCoaching 차트 기반)
+        // ========================================
+        const RFI_RANGES = {
+            'UTG': {
+                raise: ['AA','KK','QQ','JJ','TT','99','88','77',
+                    'AKs','AQs','AJs','ATs','A5s','A4s',
+                    'KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s',
+                    'AKo','AQo','AJo','KQo'],
+                percent: '10.1%'
+            },
+            'UTG+1': {
+                raise: ['AA','KK','QQ','JJ','TT','99','88','77','66',
+                    'AKs','AQs','AJs','ATs','A9s','A5s','A4s','A3s',
+                    'KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','76s',
+                    'AKo','AQo','AJo','ATo','KQo','KJo'],
+                percent: '14.3%'
+            },
+            'UTG+2': {
+                raise: ['AA','KK','QQ','JJ','TT','99','88','77','66',
+                    'AKs','AQs','AJs','ATs','A9s','A5s','A4s','A3s',
+                    'KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','76s','65s',
+                    'AKo','AQo','AJo','ATo','KQo','KJo','QJo'],
+                percent: '15.7%'
+            },
+            'LJ': {
+                raise: ['AA','KK','QQ','JJ','TT','99','88','77','66','55',
+                    'AKs','AQs','AJs','ATs','A9s','A8s','A5s','A4s','A3s','A2s',
+                    'KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','64s','54s',
+                    'AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','QJo','QTo','JTo'],
+                percent: '18.3%'
+            },
+            'HJ': {
+                raise: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44',
+                    'AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s',
+                    'KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','T7s','98s','97s','96s','87s','86s','76s','75s','65s','64s','54s','53s',
+                    'AKo','AQo','AJo','ATo','A9o','A8o','KQo','KJo','KTo','K9o','QJo','QTo','JTo','J9o'],
+                percent: '21.3%'
+            },
+            'CO': {
+                raise: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22',
+                    'AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s',
+                    'KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','QJs','QTs','Q9s','Q8s','Q7s','JTs','J9s','J8s','J7s','T9s','T8s','T7s','98s','97s','96s','87s','86s','85s','76s','75s','74s','65s','64s','63s','54s','53s','43s',
+                    'AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','KQo','KJo','KTo','K9o','K8o','QJo','QTo','Q9o','JTo','J9o','T9o','T8o','98o','97o','87o'],
+                percent: '27.0%'
+            },
+            'BTN': {
+                raise: ['AA','KK','QQ','JJ','TT','99','88','77','66','55','44','33','22',
+                    'AKs','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s',
+                    'KQs','KJs','KTs','K9s','K8s','K7s','K6s','K5s','K4s','K3s','K2s',
+                    'QJs','QTs','Q9s','Q8s','Q7s','Q6s','Q5s','Q4s','Q3s','Q2s',
+                    'JTs','J9s','J8s','J7s','J6s','J5s','J4s','J3s','J2s',
+                    'T9s','T8s','T7s','T6s','T5s','T4s','T3s','T2s',
+                    '98s','97s','96s','95s','94s','93s','92s',
+                    '87s','86s','85s','84s','83s','82s',
+                    '76s','75s','74s','73s','72s',
+                    '65s','64s','63s','62s',
+                    '54s','53s','52s',
+                    '43s','42s',
+                    '32s',
+                    'AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o',
+                    'KQo','KJo','KTo','K9o','K8o','K7o','K6o','K5o','K4o','K3o','K2o',
+                    'QJo','QTo','Q9o','Q8o','Q7o','Q6o',
+                    'JTo','J9o','J8o','J7o',
+                    'T9o','T8o','T7o',
+                    '98o','97o','96o',
+                    '87o','86o',
+                    '76o','75o',
+                    '65o','64o',
+                    '54o'],
+                percent: '51.1%'
+            },
+            'SB': {
+                raiseValue: ['AA','KK','QQ','JJ','TT','99',
+                    'AKs','AQs','AJs','ATs','A9s',
+                    'KQs','KJs',
+                    'AKo','AQo'],
+                raiseBluff: ['A8s','A7s','A6s','A5s','A4s','A3s','A2s',
+                    'KTs','K9s','K8s','K7s','K6s','K5s',
+                    'QTs','Q9s','Q8s','Q7s',
+                    'JTs','J9s','J8s','J7s',
+                    'T9s','T8s','T7s',
+                    '98s','97s','96s',
+                    '87s','86s',
+                    '76s','75s',
+                    '65s','64s',
+                    '54s','53s',
+                    '43s',
+                    'AJo','ATo','A9o','A8o','A7o','A6o','A5o',
+                    'KQo','KJo','KTo','K9o',
+                    'QJo','QTo','Q9o',
+                    'JTo','J9o',
+                    'T9o',
+                    '98o'],
+                limp: ['88','77','66','55','44','33','22',
+                    'QJs',
+                    'A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o',
+                    'K8o','K7o','K6o','K5o','K4o','K3o','K2o',
+                    'Q8o','Q7o','Q6o','Q5o','Q4o','Q3o','Q2o',
+                    'J8o','J7o','J6o','J5o','J4o','J3o','J2o',
+                    'T8o','T7o','T6o','T5o','T4o','T3o','T2o',
+                    '97o','96o','95o','94o','93o','92o',
+                    '86o','85o','84o','83o','82o',
+                    '75o','74o','73o','72o',
+                    '64o','63o','62o',
+                    '53o','52o',
+                    '42o',
+                    '32o'],
+                percent: 'Value 8.9%, Bluff 13.0%, Limp 48.6%'
+            }
+        };
+
+        // ========================================
+        // Facing RFI 레인지
+        // ========================================
+        const FACING_RFI_RANGES = {
+            // HJ vs earlier positions
+            'HJ_vs_UTG': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s'],
+                call: ['JJ','TT','AQs','AJs','KQs','AKo'],
+                percent: '3bet 4.4%, Call 4.1%'
+            },
+            'HJ_vs_UTG+1': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s'],
+                call: ['JJ','TT','AQs','AJs','KQs','AKo'],
+                percent: '3bet 4.4%, Call 4.8%'
+            },
+            'HJ_vs_UTG+2': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s','A3s'],
+                call: ['JJ','TT','99','AQs','AJs','ATs','KQs','KJs','QJs','JTs','AKo','AQo'],
+                percent: '3bet 4.4%, Call 5.3%'
+            },
+            'HJ_vs_LJ': {
+                value: ['AA','KK','QQ','AKs','AQs'],
+                bluff: ['A5s','A4s','A3s','A2s','K9s','Q9s'],
+                call: ['JJ','TT','99','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','AKo','AQo','KQo'],
+                percent: '3bet 8.9%, Call 5.9%'
+            },
+            // CO vs earlier positions
+            'CO_vs_UTG': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s'],
+                call: ['JJ','TT','99','AQs','AJs','ATs','KQs','KJs','QJs','JTs','T9s','98s','AKo','AQo'],
+                percent: '3bet 5.3%, Call 5.7%'
+            },
+            'CO_vs_UTG+2': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s','A3s','A2s'],
+                call: ['JJ','TT','99','AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','AKo','AQo','KQo'],
+                percent: '3bet 6.5%, Call 6.2%'
+            },
+            'CO_vs_LJ': {
+                value: ['AA','KK','QQ','AKs','AQs'],
+                bluff: ['A5s','A4s','A3s','A2s','K9s','Q9s'],
+                call: ['JJ','TT','99','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','76s','AKo','AQo','KQo'],
+                percent: '3bet 8.6%, Call 6.0%'
+            },
+            'CO_vs_HJ': {
+                value: ['AA','KK','QQ','AKs','AQs'],
+                bluff: ['A5s','A4s','A3s','A2s','K5s','K4s','Q9s','J9s'],
+                call: ['JJ','TT','99','88','AJs','ATs','A9s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s','AKo','AQo','AJo','KQo'],
+                percent: '3bet 10.4%, Call 6.3%'
+            },
+            // BTN vs earlier positions
+            'BTN_vs_UTG': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s','A3s'],
+                call: ['JJ','TT','99','AQs','AJs','ATs','KQs','KJs','QJs','JTs','T9s','98s','AKo','AQo'],
+                percent: '3bet 6.2%, Call 8.1%'
+            },
+            'BTN_vs_UTG+1': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s','A3s','A2s'],
+                call: ['JJ','TT','99','88','AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','AKo','AQo'],
+                percent: '3bet 6.5%, Call 8.7%'
+            },
+            'BTN_vs_UTG+2': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s','A3s','A2s','K9s'],
+                call: ['JJ','TT','99','88','AQs','AJs','ATs','A9s','KQs','KJs','KTs','QJs','QTs','JTs','J9s','T9s','98s','87s','76s','AKo','AQo','KQo'],
+                percent: '3bet 7.8%, Call 10.3%'
+            },
+            'BTN_vs_LJ': {
+                value: ['AA','KK','QQ','AKs','AQs'],
+                bluff: ['A5s','A4s','A3s','A2s','K9s','K5s','Q9s','J9s','T8s','97s'],
+                call: ['JJ','TT','99','88','77','AJs','ATs','A9s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','98s','87s','76s','65s','AKo','AQo','AJo','KQo','KJo'],
+                percent: '3bet 8.3%, Call 10.6%'
+            },
+            'BTN_vs_HJ': {
+                value: ['AA','KK','QQ','JJ','AKs','AQs'],
+                bluff: ['A5s','A4s','A3s','A2s','K5s','K4s','Q9s','J9s','T8s','97s','86s','75s','64s'],
+                call: ['TT','99','88','77','AJs','ATs','A9s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','86s','76s','65s','54s','AKo','AQo','AJo','KQo','KJo','QJo'],
+                percent: '3bet 9.2%, Call 11.5%'
+            },
+            'BTN_vs_CO': {
+                value: ['AA','KK','QQ','JJ','AKs','AQs','AJs'],
+                bluff: ['A8s','A7s','A6s','A5s','A4s','A3s','A2s','K7s','K6s','K5s','K4s','Q8s','J8s','T7s','96s','85s','74s','63s','53s','43s'],
+                call: ['TT','99','88','77','66','ATs','A9s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','64s','54s','AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo','QTo','JTo','T9o'],
+                percent: '3bet 13.8%, Call 13.9%'
+            },
+            // SB vs earlier positions
+            'SB_vs_UTG': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s'],
+                call: ['JJ','TT','99','AQs','AJs','KQs','KJs','QJs','AKo'],
+                percent: '3bet 2.6%, Call 6.5%'
+            },
+            'SB_vs_UTG+2': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s'],
+                call: ['JJ','TT','99','88','AQs','AJs','ATs','KQs','KJs','KTs','QJs','JTs','T9s','98s','AKo','AQo'],
+                percent: '3bet 2.6%, Call 7.8%'
+            },
+            'SB_vs_LJ': {
+                value: ['AA','KK','QQ','AKs','AQs'],
+                bluff: ['A5s','A4s','A3s'],
+                call: ['JJ','TT','99','88','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','AKo','AQo','KQo'],
+                percent: '3bet 5.0%, Call 7.1%'
+            },
+            'SB_vs_HJ': {
+                value: ['AA','KK','QQ','AKs','AQs'],
+                bluff: ['A5s','A4s','A3s','A2s','K9s'],
+                call: ['JJ','TT','99','88','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','87s','76s','AKo','AQo','KQo'],
+                percent: '3bet 5.9%, Call 7.8%'
+            },
+            'SB_vs_CO': {
+                value: ['AA','KK','QQ','JJ','AKs','AQs','AJs'],
+                bluff: ['A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','K9s','K8s','K7s','K6s','Q9s','J9s','T8s','97s','86s','75s','64s','53s'],
+                call: [],
+                percent: '3bet 16.8%, Call 0%'
+            },
+            'SB_vs_BTN': {
+                value: ['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','KQs','KJs'],
+                bluff: ['A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','K9s','K8s','K7s','K6s','K5s','K4s','Q9s','Q8s','J8s','T7s','96s','85s','74s','63s','53s','43s','AJo','ATo','A9o','KQo'],
+                call: [],
+                percent: '3bet 21.3%, Call 0%'
+            },
+            // BB vs earlier positions
+            'BB_vs_UTG': {
+                value: ['AA','KK','AKs'],
+                bluff: ['A5s','A4s','76s','65s'],
+                call: ['QQ','JJ','TT','99','88','77','66','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A3s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','86s','75s','64s','54s','53s','43s','AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo','QTo','JTo'],
+                percent: '3bet 4.1%, Call 23.8%'
+            },
+            'BB_vs_UTG+2': {
+                value: ['AA','KK','QQ','AKs'],
+                bluff: ['A5s','A4s','A3s','76s','65s','54s'],
+                call: ['JJ','TT','99','88','77','66','55','AQs','AJs','ATs','A9s','A8s','A7s','A6s','A2s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','86s','75s','64s','53s','43s','AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo','QTo','JTo'],
+                percent: '3bet 6.3%, Call 23.7%'
+            },
+            'BB_vs_LJ': {
+                value: ['AA','KK','QQ','JJ','AKs','AQs'],
+                bluff: ['A5s','A4s','A3s','A2s','K7s','76s','65s','54s'],
+                call: ['TT','99','88','77','66','55','44','AJs','ATs','A9s','A8s','A7s','A6s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','86s','75s','64s','53s','43s','AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo','K9o','QJo','QTo','JTo','T9o'],
+                percent: '3bet 7.7%, Call 25.3%'
+            },
+            'BB_vs_HJ': {
+                value: ['AA','KK','QQ','JJ','AKs','AQs','AJs'],
+                bluff: ['A5s','A4s','A3s','A2s','K7s','K6s','Q8s','76s','65s','54s'],
+                call: ['TT','99','88','77','66','55','44','ATs','A9s','A8s','A7s','A6s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','J8s','T9s','T8s','98s','97s','87s','86s','75s','64s','53s','43s','AKo','AQo','AJo','ATo','A9o','A8o','KQo','KJo','KTo','K9o','QJo','QTo','Q9o','JTo','J9o','T9o'],
+                percent: '3bet 9.5%, Call 24.1%'
+            },
+            'BB_vs_CO': {
+                value: ['AA','KK','QQ','JJ','AKs','AQs','AJs','ATs','KQs'],
+                bluff: ['A7s','A6s','A5s','A4s','A3s','A2s','K7s','K6s','K5s','Q8s','J8s','T7s','96s','85s','74s','63s','53s','43s'],
+                call: ['TT','99','88','77','66','55','44','A9s','A8s','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','64s','54s','AKo','AQo','AJo','ATo','A9o','A8o','A7o','KQo','KJo','KTo','K9o','QJo','QTo','Q9o','JTo','J9o','T9o','98o'],
+                percent: '3bet 14.3%, Call 29.6%'
+            },
+            'BB_vs_BTN': {
+                value: ['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','A9s','KQs','KJs','KTs'],
+                bluff: ['A6s','A5s','A4s','A3s','A2s','K6s','K5s','K4s','K3s','K2s','Q7s','Q6s','Q5s','J7s','J6s','T6s','95s','84s','73s','63s','52s','42s'],
+                call: ['88','77','66','55','44','33','22','A8s','A7s','K9s','K8s','K7s','QJs','QTs','Q9s','Q8s','JTs','J9s','J8s','T9s','T8s','T7s','98s','97s','96s','87s','86s','85s','76s','75s','74s','65s','64s','54s','53s','43s','AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o','KQo','KJo','KTo','K9o','K8o','K7o','K6o','K5o','K4o','QJo','QTo','Q9o','Q8o','Q7o','JTo','J9o','J8o','J7o','T9o','T8o','T7o','98o','97o','96o','87o','86o','76o','75o','65o','54o'],
+                percent: '3bet 22.4%, Call 49.6%'
+            },
+            'BB_vs_SB': {
+                value: ['AA','KK','QQ','JJ','TT','99','88','AKs','AQs','AJs','ATs','A9s','KQs','KJs','KTs','K9s'],
+                bluff: ['A8s','A7s','A6s','A5s','A4s','A3s','A2s','K8s','K7s','K6s','K5s','K4s','K3s','K2s','Q8s','Q7s','Q6s','Q5s','J7s','J6s','J5s','T6s','T5s','95s','94s','84s','83s','73s','63s','53s','52s','42s'],
+                call: ['77','66','55','44','33','22','Q9s','Q8s','QJs','QTs','JTs','J9s','J8s','T9s','T8s','T7s','98s','97s','96s','87s','86s','85s','76s','75s','74s','65s','64s','54s','43s','AKo','AQo','AJo','ATo','A9o','A8o','A7o','A6o','A5o','A4o','A3o','A2o','KQo','KJo','KTo','K9o','K8o','K7o','K6o','K5o','K4o','K3o','K2o','QJo','QTo','Q9o','Q8o','Q7o','Q6o','Q5o','JTo','J9o','J8o','J7o','J6o','T9o','T8o','T7o','T6o','98o','97o','96o','87o','86o','76o','75o','65o','64o','54o','43o'],
+                percent: '3bet 23.6%, Call 54.8%'
+            }
+        };
+
+        // ========================================
+        // RFI vs 3bet 레인지
+        // ========================================
+        const VS_3BET_RANGES = {
+            // UTG vs 3bet from different positions
+            'UTG_vs_IP_3bet': {
+                fourBetValue: ['AA','KK','AKs'],
+                fourBetBluff: ['A5s','A4s'],
+                call: ['QQ','JJ','TT','AQs','AJs','KQs','AKo','AQo'],
+                percent: '4bet 3.6%, Call 5.6%'
+            },
+            'UTG_vs_SB_3bet': {
+                fourBetValue: ['AA','KK','AKs'],
+                fourBetBluff: ['A5s','A4s'],
+                call: ['QQ','JJ','TT','99','AQs','AJs','ATs','KQs','KJs','AKo','AQo'],
+                percent: '4bet 4.1%, Call 6.0%'
+            },
+            // LJ vs 3bet
+            'LJ_vs_IP_3bet': {
+                fourBetValue: ['AA','KK','QQ','AKs'],
+                fourBetBluff: ['A5s','A4s','A3s'],
+                call: ['JJ','TT','99','AQs','AJs','ATs','KQs','KJs','QJs','JTs','T9s','AKo','AQo','AJo','KQo'],
+                percent: '4bet 5.2%, Call 7.2%'
+            },
+            'LJ_vs_SB_3bet': {
+                fourBetValue: ['AA','KK','QQ','AKs'],
+                fourBetBluff: ['A5s','A4s','A3s','A2s'],
+                call: ['JJ','TT','99','88','AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','AKo','AQo','AJo','KQo','KJo'],
+                percent: '4bet 5.9%, Call 9.7%'
+            },
+            // HJ vs 3bet
+            'HJ_vs_CO_3bet': {
+                fourBetValue: ['AA','KK','QQ','AKs'],
+                fourBetBluff: ['A5s','A4s','A3s','A2s'],
+                call: ['JJ','TT','99','88','AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','AKo','AQo','AJo','KQo','KJo'],
+                percent: '4bet 6.0%, Call 10.0%'
+            },
+            'HJ_vs_BTN_3bet': {
+                fourBetValue: ['AA','KK','QQ','AKs'],
+                fourBetBluff: ['A5s','A4s','A3s','A2s','K9s'],
+                call: ['JJ','TT','99','88','77','AQs','AJs','ATs','A9s','KQs','KJs','KTs','QJs','QTs','JTs','J9s','T9s','98s','87s','AKo','AQo','AJo','KQo','KJo'],
+                percent: '4bet 6.8%, Call 10.4%'
+            },
+            'HJ_vs_SB_3bet': {
+                fourBetValue: ['AA','KK','QQ','AKs'],
+                fourBetBluff: ['A5s','A4s','A3s','A2s','K9s'],
+                call: ['JJ','TT','99','88','77','AQs','AJs','ATs','A9s','KQs','KJs','KTs','K9s','QJs','QTs','JTs','J9s','T9s','98s','87s','76s','AKo','AQo','AJo','KQo','KJo'],
+                percent: '4bet 6.8%, Call 10.7%'
+            },
+            // CO vs 3bet
+            'CO_vs_BTN_3bet': {
+                fourBetValue: ['AA','KK','QQ','JJ','AKs','AQs'],
+                fourBetBluff: ['A5s','A4s','A3s','A2s','K5s','K4s'],
+                call: ['TT','99','88','77','AJs','ATs','A9s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','76s','65s','AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo'],
+                percent: '4bet 7.5%, Call 11.5%'
+            },
+            'CO_vs_SB_3bet': {
+                fourBetValue: ['AA','KK','QQ','JJ','AKs','AQs'],
+                fourBetBluff: ['A5s','A4s','A3s','A2s','K5s','K4s','Q9s'],
+                call: ['TT','99','88','77','66','AJs','ATs','A9s','KQs','KJs','KTs','K9s','K8s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','86s','76s','65s','54s','AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo'],
+                percent: '4bet 8.4%, Call 11.5%'
+            },
+            // BTN vs 3bet
+            'BTN_vs_SB_3bet': {
+                fourBetValue: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs'],
+                fourBetBluff: ['A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','K6s','K5s','K4s','Q8s','J8s','T7s','96s','85s','74s'],
+                call: ['99','88','77','66','55','ATs','A9s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','64s','54s','AKo','AQo','AJo','ATo','A9o','A8o','KQo','KJo','KTo','K9o','QJo','QTo','JTo','T9o'],
+                percent: '4bet 14.8%, Call 18.6%'
+            },
+            // SB RFI vs BB 3bet
+            'SB_vs_BB_3bet': {
+                fourBetValue: ['QQ','JJ','AQs','AJs'],
+                fourBetBluff: ['A6s','A5s','A4s','A3s','K6s','K5s','Q8s','J8s'],
+                call: ['TT','99','88','77','66','ATs','A9s','A8s','A7s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','64s','54s','53s','43s','AKo','AQo','AJo','ATo','A9o','KQo','KJo','KTo'],
+                percent: '4bet 6.6%, Call 7.4%'
+            },
+            // Legacy keys for backward compatibility
+            'UTG_vs_3bet': {
+                fourBetValue: ['AA','KK','AKs'],
+                fourBetBluff: ['A5s','A4s'],
+                call: ['QQ','JJ','TT','AQs','AJs','KQs','AKo','AQo'],
+                percent: '4bet 3.6%, Call 5.6%'
+            },
+            'LJ_vs_3bet': {
+                fourBetValue: ['AA','KK','QQ','AKs'],
+                fourBetBluff: ['A5s','A4s','A3s'],
+                call: ['JJ','TT','99','AQs','AJs','ATs','KQs','KJs','QJs','JTs','T9s','AKo','AQo','AJo','KQo'],
+                percent: '4bet 5.2%, Call 7.2%'
+            },
+            'HJ_vs_3bet': {
+                fourBetValue: ['AA','KK','QQ','AKs'],
+                fourBetBluff: ['A5s','A4s','A3s','A2s'],
+                call: ['JJ','TT','99','88','AQs','AJs','ATs','KQs','KJs','KTs','QJs','QTs','JTs','T9s','98s','AKo','AQo','AJo','KQo','KJo'],
+                percent: '4bet 6.0%, Call 10.0%'
+            },
+            'CO_vs_3bet': {
+                fourBetValue: ['AA','KK','QQ','JJ','AKs','AQs'],
+                fourBetBluff: ['A5s','A4s','A3s','A2s','K5s','K4s'],
+                call: ['TT','99','88','77','AJs','ATs','A9s','KQs','KJs','KTs','K9s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','76s','65s','AKo','AQo','AJo','ATo','KQo','KJo','KTo','QJo'],
+                percent: '4bet 7.7%, Call 11.5%'
+            },
+            'BTN_vs_3bet': {
+                fourBetValue: ['AA','KK','QQ','JJ','TT','AKs','AQs','AJs'],
+                fourBetBluff: ['A9s','A8s','A7s','A6s','A5s','A4s','A3s','A2s','K6s','K5s','K4s','Q8s','J8s','T7s','96s','85s','74s'],
+                call: ['99','88','77','66','55','ATs','A9s','KQs','KJs','KTs','K9s','K8s','K7s','QJs','QTs','Q9s','JTs','J9s','T9s','T8s','98s','97s','87s','86s','76s','75s','65s','64s','54s','AKo','AQo','AJo','ATo','A9o','A8o','KQo','KJo','KTo','K9o','QJo','QTo','JTo','T9o'],
+                percent: '4bet 14.8%, Call 18.6%'
+            }
+        };
+
+        // 포지션 정보
+        const POSITION_INFO = {
+            'UTG': 'Under The Gun - EP, 가장 타이트하게',
+            'UTG+1': 'UTG+1 - EP, 타이트하게',
+            'UTG+2': 'UTG+2 - EP/MP',
+            'LJ': 'Lojack - MP',
+            'HJ': 'Hijack - MP/LP',
+            'CO': 'Cutoff - LP, 버튼 앞',
+            'BTN': 'Button - 최고의 포지션',
+            'SB': 'Small Blind - OOP',
+            'BB': 'Big Blind - OOP'
+        };
+
+        // 포지션 순서 (액션 순서)
+        const POSITION_ORDER = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+
+        // 테이블 좌석 업데이트
+        function updateTableDisplay(heroPos, villainPos = null) {
+            const seats = document.querySelectorAll('.seat');
+
+            seats.forEach(seat => {
+                const pos = seat.dataset.pos;
+                seat.classList.remove('hero', 'villain', 'folded');
+
+                if (pos === heroPos) {
+                    seat.classList.add('hero');
+                } else if (pos === villainPos) {
+                    seat.classList.add('villain');
+                } else if (currentMode === 'rfi') {
+                    // RFI 모드: 히어로 앞 포지션들은 폴드
+                    const heroIdx = POSITION_ORDER.indexOf(heroPos);
+                    const posIdx = POSITION_ORDER.indexOf(pos);
+                    if (posIdx < heroIdx) {
+                        seat.classList.add('folded');
+                    }
+                } else if (currentMode === 'facing') {
+                    // Facing RFI 모드: 빌런과 히어로 사이 포지션들은 폴드
+                    const heroIdx = POSITION_ORDER.indexOf(heroPos);
+                    const villainIdx = POSITION_ORDER.indexOf(villainPos);
+                    const posIdx = POSITION_ORDER.indexOf(pos);
+                    if (posIdx < villainIdx || (posIdx > villainIdx && posIdx < heroIdx)) {
+                        seat.classList.add('folded');
+                    }
+                } else if (currentMode === 'vs3bet') {
+                    // vs 3bet 모드: 히어로가 오픈, 빌런이 3bet
+                    const heroIdx = POSITION_ORDER.indexOf(heroPos);
+                    const posIdx = POSITION_ORDER.indexOf(pos);
+                    if (posIdx < heroIdx) {
+                        seat.classList.add('folded');
+                    }
+                }
+            });
+        }
+
+        // 게임 상태
+        let currentMode = 'rfi';
+        let currentHand = null;
+        let currentPosition = 'UTG';
+        let currentVsPosition = null;
+        let selectedPositionMode = 'random';
+        let correctCount = 0;
+        let wrongCount = 0;
+        let currentBoard = [];
+        let currentHandStrength = null;
+        let currentBoardTexture = null;
+
+        // ========================================
+        // C-bet 관련 함수들
+        // ========================================
+
+        // 플랍 생성 (유저 핸드와 겹치지 않게)
+        function generateFlop(excludeCards) {
+            const deck = [];
+            for (const rank of RANKS) {
+                for (const suit of SUITS) {
+                    const cardKey = rank + suit;
+                    const isExcluded = excludeCards.some(c => c.rank === rank && c.suit === suit);
+                    if (!isExcluded) {
+                        deck.push({ rank, suit });
+                    }
+                }
+            }
+            // 셔플
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            return [deck[0], deck[1], deck[2]];
+        }
+
+        // 보드 텍스처 분석
+        function analyzeBoardTexture(board) {
+            const ranks = board.map(c => RANKS.indexOf(c.rank));
+            const suits = board.map(c => c.suit);
+            const sortedRanks = [...ranks].sort((a, b) => a - b);
+
+            const texture = {
+                tags: [],
+                isDry: false,
+                isWet: false,
+                isPaired: false,
+                isMonotone: false,
+                isTwoTone: false,
+                isRainbow: false,
+                hasHighCards: false,
+                isConnected: false,
+                favorsCbet: 50  // 0-100 C-bet 유리도
+            };
+
+            // 페어드 체크
+            if (ranks[0] === ranks[1] || ranks[1] === ranks[2] || ranks[0] === ranks[2]) {
+                texture.isPaired = true;
+                texture.tags.push('페어드');
+                texture.favorsCbet += 10;
+            }
+
+            // 수트 체크
+            const uniqueSuits = [...new Set(suits)];
+            if (uniqueSuits.length === 1) {
+                texture.isMonotone = true;
+                texture.tags.push('모노톤');
+                texture.favorsCbet -= 15;
+            } else if (uniqueSuits.length === 2) {
+                texture.isTwoTone = true;
+                texture.tags.push('투톤');
+                texture.favorsCbet -= 5;
+            } else {
+                texture.isRainbow = true;
+                texture.tags.push('레인보우');
+                texture.favorsCbet += 5;
+            }
+
+            // 하이카드 체크 (A, K, Q)
+            const highCardCount = ranks.filter(r => r <= 2).length;
+            if (highCardCount >= 2) {
+                texture.hasHighCards = true;
+                texture.tags.push('하이');
+                texture.favorsCbet += 10;
+            } else if (sortedRanks[0] >= 6) {
+                texture.tags.push('로우');
+                texture.favorsCbet -= 10;
+            }
+
+            // 연결성 체크
+            const gaps = [];
+            for (let i = 0; i < sortedRanks.length - 1; i++) {
+                gaps.push(sortedRanks[i + 1] - sortedRanks[i]);
+            }
+            const maxGap = Math.max(...gaps);
+            const totalGap = sortedRanks[2] - sortedRanks[0];
+
+            if (totalGap <= 4 && !texture.isPaired) {
+                texture.isConnected = true;
+                texture.tags.push('커넥티드');
+                texture.favorsCbet -= 10;
+            } else if (totalGap >= 8) {
+                texture.tags.push('디스커넥티드');
+                texture.favorsCbet += 5;
+            }
+
+            // 드라이/웻 판정
+            texture.isDry = texture.favorsCbet >= 55;
+            texture.isWet = texture.favorsCbet <= 45;
+
+            if (texture.isDry) texture.tags.unshift('드라이');
+            else if (texture.isWet) texture.tags.unshift('웻');
+
+            texture.favorsCbet = Math.max(0, Math.min(100, texture.favorsCbet));
+
+            return texture;
+        }
+
+        // 핸드 강도 평가
+        function evaluateHandStrength(hand, board) {
+            const allCards = [...hand, ...board];
+            const handRanks = hand.map(c => RANKS.indexOf(c.rank));
+            const boardRanks = board.map(c => RANKS.indexOf(c.rank));
+            const handSuits = hand.map(c => c.suit);
+            const boardSuits = board.map(c => c.suit);
+
+            let strength = {
+                category: 'air',
+                name: '에어',
+                value: 0,
+                hasDraws: false,
+                draws: [],
+                shouldCbet: false,
+                reason: ''
+            };
+
+            // 페어 체크
+            const pairs = [];
+            for (const hr of handRanks) {
+                for (const br of boardRanks) {
+                    if (hr === br) {
+                        pairs.push({ rank: hr, isTopPair: br === Math.min(...boardRanks) });
+                    }
+                }
+            }
+
+            // 오버페어 체크 (포켓 페어가 보드보다 높음)
+            if (handRanks[0] === handRanks[1] && handRanks[0] < Math.min(...boardRanks)) {
+                strength.category = 'overpair';
+                strength.name = '오버페어';
+                strength.value = 85;
+                strength.shouldCbet = true;
+                strength.reason = '오버페어는 밸류로 C-bet';
+            }
+            // 탑페어 체크
+            else if (pairs.length > 0 && pairs.some(p => p.isTopPair)) {
+                const topPair = pairs.find(p => p.isTopPair);
+                const kicker = Math.min(...handRanks.filter(r => r !== topPair.rank));
+                if (kicker <= 2) {
+                    strength.category = 'tptk';
+                    strength.name = '탑페어 탑키커';
+                    strength.value = 80;
+                } else if (kicker <= 4) {
+                    strength.category = 'tpgk';
+                    strength.name = '탑페어 굿키커';
+                    strength.value = 70;
+                } else {
+                    strength.category = 'tpwk';
+                    strength.name = '탑페어 약키커';
+                    strength.value = 60;
+                }
+                strength.shouldCbet = true;
+                strength.reason = '탑페어는 밸류로 C-bet';
+            }
+            // 미들/바텀 페어
+            else if (pairs.length > 0) {
+                strength.category = 'middlepair';
+                strength.name = '미들/바텀 페어';
+                strength.value = 40;
+                strength.shouldCbet = false;
+                strength.reason = '약한 메이드는 체크로 팟 컨트롤';
+            }
+            // 포켓 페어 (보드 아래)
+            else if (handRanks[0] === handRanks[1]) {
+                strength.category = 'underpair';
+                strength.name = '언더페어';
+                strength.value = 35;
+                strength.shouldCbet = false;
+                strength.reason = '언더페어는 쇼다운 밸류로 체크';
+            }
+
+            // 드로우 체크
+            // 플러시 드로우
+            for (const hs of handSuits) {
+                const suitCount = boardSuits.filter(bs => bs === hs).length;
+                if (suitCount >= 2) {
+                    if (handSuits[0] === handSuits[1] && handSuits[0] === hs) {
+                        // 양손 플러시 드로우
+                    } else {
+                        strength.hasDraws = true;
+                        strength.draws.push('플러시 드로우');
+                    }
+                }
+            }
+
+            // 스트레이트 드로우 (간단한 체크)
+            const allRanks = [...new Set([...handRanks, ...boardRanks])].sort((a, b) => a - b);
+            // OESD/거터 체크 (간단화)
+            for (let i = 0; i <= 8; i++) {
+                const window = [i, i+1, i+2, i+3, i+4];
+                const count = window.filter(r => allRanks.includes(r)).length;
+                if (count === 4) {
+                    strength.hasDraws = true;
+                    if (!strength.draws.includes('스트레이트 드로우')) {
+                        strength.draws.push('스트레이트 드로우');
+                    }
+                }
+            }
+
+            // 에어지만 블로커/드로우가 있는 경우
+            if (strength.category === 'air') {
+                // 오버카드 체크
+                const overcards = handRanks.filter(hr => hr < Math.min(...boardRanks));
+                if (overcards.length === 2) {
+                    strength.name = '투 오버카드';
+                    strength.value = 25;
+                    if (overcards.some(o => o <= 2)) {  // A 또는 K 블로커
+                        strength.shouldCbet = true;
+                        strength.reason = '오버카드 + 블로커로 블러프 C-bet';
+                    }
+                } else if (overcards.length === 1) {
+                    strength.name = '원 오버카드';
+                    strength.value = 15;
+                }
+
+                if (strength.hasDraws) {
+                    strength.shouldCbet = true;
+                    strength.reason = '드로우로 세미블러프 C-bet';
+                    strength.value += 20;
+                }
+
+                // 백도어 드로우 (간단화 - 투톤 보드에서 같은 수트 1장)
+                if (currentBoardTexture?.isTwoTone) {
+                    for (const hs of handSuits) {
+                        const suitCount = boardSuits.filter(bs => bs === hs).length;
+                        if (suitCount === 2) {
+                            strength.draws.push('백도어 FD');
+                            strength.value += 5;
+                        }
+                    }
+                }
+            }
+
+            // 최종 C-bet 결정 보정
+            if (strength.value === 0 && !strength.hasDraws) {
+                strength.shouldCbet = currentBoardTexture?.favorsCbet >= 60;
+                strength.reason = strength.shouldCbet
+                    ? '드라이 보드에서 에어로 블러프 C-bet'
+                    : '웻 보드에서 에어는 체크';
+            }
+
+            return strength;
+        }
+
+        // 보드 카드 표시
+        function updateBoardDisplay(board) {
+            for (let i = 0; i < 3; i++) {
+                const cardEl = document.getElementById(`flop${i + 1}`);
+                cardEl.querySelector('.card-rank').textContent = board[i].rank;
+                cardEl.querySelector('.card-suit').textContent = board[i].suit;
+                cardEl.className = 'board-card ' + SUIT_NAMES[board[i].suit];
+            }
+        }
+
+        // 핸드 표기법 변환
+        function getHandNotation(card1, card2) {
+            const rank1 = card1.rank;
+            const rank2 = card2.rank;
+            const suited = card1.suit === card2.suit;
+            const idx1 = RANKS.indexOf(rank1);
+            const idx2 = RANKS.indexOf(rank2);
+
+            if (rank1 === rank2) return rank1 + rank2;
+            if (idx1 < idx2) return rank1 + rank2 + (suited ? 's' : 'o');
+            return rank2 + rank1 + (suited ? 's' : 'o');
+        }
+
+        // 핸드 설명
+        function getHandDescription(notation) {
+            const names = {'A':'Ace','K':'King','Q':'Queen','J':'Jack','T':'Ten','9':'Nine','8':'Eight','7':'Seven','6':'Six','5':'Five','4':'Four','3':'Three','2':'Two'};
+            if (notation.length === 2) return `Pocket ${names[notation[0]]}s`;
+            return `${names[notation[0]]}-${names[notation[1]]} ${notation[2] === 's' ? 'Suited' : 'Offsuit'}`;
+        }
+
+        // 랜덤 핸드 생성
+        function generateHand() {
+            const deck = [];
+            for (const rank of RANKS) {
+                for (const suit of SUITS) {
+                    deck.push({ rank, suit });
+                }
+            }
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            return [deck[0], deck[1]];
+        }
+
+        // 정답 확인 함수들
+        function getCorrectAction_RFI(handNotation, position) {
+            const range = RFI_RANGES[position];
+            if (!range) return 'fold';
+
+            if (position === 'SB') {
+                if (range.raiseValue?.includes(handNotation)) return 'raise';
+                if (range.raiseBluff?.includes(handNotation)) return 'raise';
+                if (range.limp?.includes(handNotation)) return 'limp';
+                return 'fold';
+            }
+            return range.raise?.includes(handNotation) ? 'raise' : 'fold';
+        }
+
+        function getCorrectAction_Facing(handNotation, myPos, vsPos) {
+            const key = `${myPos}_vs_${vsPos}`;
+            const range = FACING_RFI_RANGES[key];
+            if (!range) return 'fold';
+
+            if (range.value?.includes(handNotation)) return '3bet';
+            if (range.bluff?.includes(handNotation)) return '3bet';
+            if (range.call?.includes(handNotation)) return 'call';
+            return 'fold';
+        }
+
+        function getCorrectAction_Vs3bet(handNotation, position) {
+            const key = position === 'SB' ? 'SB_vs_BB_3bet' : `${position}_vs_3bet`;
+            const range = VS_3BET_RANGES[key];
+            if (!range) return 'fold';
+
+            if (range.fourBetValue?.includes(handNotation)) return '4bet';
+            if (range.fourBetBluff?.includes(handNotation)) return '4bet';
+            if (range.call?.includes(handNotation)) return 'call';
+            return 'fold';
+        }
+
+        // 카드 표시
+        function updateCardDisplay(card, elementId) {
+            const cardEl = document.getElementById(elementId);
+            cardEl.querySelector('.card-rank').textContent = card.rank;
+            cardEl.querySelector('.card-suit').textContent = card.suit;
+            cardEl.className = 'card ' + SUIT_NAMES[card.suit];
+        }
+
+        // 포지션 버튼 생성
+        function updatePositionSelector() {
+            const selector = document.getElementById('positionSelector');
+            let positions = [];
+
+            if (currentMode === 'rfi') {
+                positions = ['random', 'UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB'];
+            } else if (currentMode === 'facing') {
+                positions = ['random',
+                    'HJ_vs_UTG', 'HJ_vs_LJ',
+                    'CO_vs_UTG', 'CO_vs_LJ', 'CO_vs_HJ',
+                    'BTN_vs_UTG', 'BTN_vs_LJ', 'BTN_vs_HJ', 'BTN_vs_CO',
+                    'SB_vs_UTG', 'SB_vs_CO', 'SB_vs_BTN',
+                    'BB_vs_UTG', 'BB_vs_LJ', 'BB_vs_HJ', 'BB_vs_CO', 'BB_vs_BTN', 'BB_vs_SB'];
+            } else if (currentMode === 'cbet') {
+                positions = ['random', 'IP_vs_BB', 'BTN_vs_BB', 'CO_vs_BB', 'SB_vs_BB'];
+            } else {
+                positions = ['random', 'UTG', 'LJ', 'HJ', 'CO', 'BTN', 'SB'];
+            }
+
+            selector.innerHTML = positions.map(pos =>
+                `<button class="pos-btn ${selectedPositionMode === pos ? 'active' : ''}" data-pos="${pos}">${pos === 'random' ? '랜덤' : pos}</button>`
+            ).join('');
+
+            selector.querySelectorAll('.pos-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedPositionMode = btn.dataset.pos;
+                    newHand();
+                });
+            });
+        }
+
+        // 액션 버튼 업데이트
+        function updateActionButtons() {
+            const container = document.getElementById('actionButtons');
+
+            if (currentMode === 'rfi') {
+                if (currentPosition === 'SB') {
+                    container.innerHTML = `
+                        <button class="btn btn-raise" onclick="makeDecision('raise')">레이즈 (R)</button>
+                        <button class="btn btn-call" onclick="makeDecision('limp')">림프 (L)</button>
+                        <button class="btn btn-fold" onclick="makeDecision('fold')">폴드 (F)</button>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <button class="btn btn-raise" onclick="makeDecision('raise')">레이즈 (R)</button>
+                        <button class="btn btn-fold" onclick="makeDecision('fold')">폴드 (F)</button>
+                    `;
+                }
+            } else if (currentMode === 'facing') {
+                container.innerHTML = `
+                    <button class="btn btn-3bet" onclick="makeDecision('3bet')">3bet (3)</button>
+                    <button class="btn btn-call" onclick="makeDecision('call')">콜 (C)</button>
+                    <button class="btn btn-fold" onclick="makeDecision('fold')">폴드 (F)</button>
+                `;
+            } else if (currentMode === 'cbet') {
+                container.innerHTML = `
+                    <button class="btn btn-raise" onclick="makeDecision('cbet')">C-bet (B)</button>
+                    <button class="btn btn-fold" onclick="makeDecision('check')">체크 (X)</button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button class="btn btn-4bet" onclick="makeDecision('4bet')">4bet (4)</button>
+                    <button class="btn btn-call" onclick="makeDecision('call')">콜 (C)</button>
+                    <button class="btn btn-fold" onclick="makeDecision('fold')">폴드 (F)</button>
+                `;
+            }
+        }
+
+        // 범례 업데이트
+        function updateLegend() {
+            const legend = document.getElementById('legend');
+            if (currentMode === 'rfi') {
+                if (currentPosition === 'SB') {
+                    legend.innerHTML = `
+                        <div class="legend-item"><div class="legend-color legend-raise"></div><span>Raise (Value)</span></div>
+                        <div class="legend-item"><div class="legend-color legend-bluff"></div><span>Raise (Bluff)</span></div>
+                        <div class="legend-item"><div class="legend-color legend-call"></div><span>Limp</span></div>
+                        <div class="legend-item"><div class="legend-color legend-fold"></div><span>Fold</span></div>
+                    `;
+                } else {
+                    legend.innerHTML = `
+                        <div class="legend-item"><div class="legend-color legend-raise"></div><span>Raise</span></div>
+                        <div class="legend-item"><div class="legend-color legend-fold"></div><span>Fold</span></div>
+                    `;
+                }
+            } else if (currentMode === 'facing') {
+                legend.innerHTML = `
+                    <div class="legend-item"><div class="legend-color legend-raise"></div><span>3bet (Value)</span></div>
+                    <div class="legend-item"><div class="legend-color legend-bluff"></div><span>3bet (Bluff)</span></div>
+                    <div class="legend-item"><div class="legend-color legend-call"></div><span>Call</span></div>
+                    <div class="legend-item"><div class="legend-color legend-fold"></div><span>Fold</span></div>
+                `;
+            } else if (currentMode === 'cbet') {
+                legend.innerHTML = `
+                    <div class="legend-item"><div class="legend-color legend-raise"></div><span>C-bet</span></div>
+                    <div class="legend-item"><div class="legend-color legend-fold"></div><span>Check</span></div>
+                `;
+            } else {
+                legend.innerHTML = `
+                    <div class="legend-item"><div class="legend-color legend-raise"></div><span>4bet (Value)</span></div>
+                    <div class="legend-item"><div class="legend-color legend-bluff"></div><span>4bet (Bluff)</span></div>
+                    <div class="legend-item"><div class="legend-color legend-call"></div><span>Call</span></div>
+                    <div class="legend-item"><div class="legend-color legend-fold"></div><span>Fold</span></div>
+                `;
+            }
+        }
+
+        // 차트 생성
+        function createChart() {
+            const grid = document.getElementById('chartGrid');
+            grid.innerHTML = '';
+
+            let range, title;
+
+            if (currentMode === 'rfi') {
+                range = RFI_RANGES[currentPosition];
+                title = `${currentPosition} RFI 레인지 (${range?.percent || ''})`;
+            } else if (currentMode === 'facing') {
+                const key = `${currentPosition}_vs_${currentVsPosition}`;
+                range = FACING_RFI_RANGES[key];
+                title = `${currentPosition} vs ${currentVsPosition} (${range?.percent || ''})`;
+            } else {
+                const key = currentPosition === 'SB' ? 'SB_vs_BB_3bet' : `${currentPosition}_vs_3bet`;
+                range = VS_3BET_RANGES[key];
+                title = `${currentPosition} vs 3bet (${range?.percent || ''})`;
+            }
+
+            document.getElementById('chartTitle').textContent = title;
+
+            for (let i = 0; i < 13; i++) {
+                for (let j = 0; j < 13; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'chart-cell';
+
+                    let notation;
+                    if (i === j) notation = RANKS[i] + RANKS[j];
+                    else if (i < j) notation = RANKS[i] + RANKS[j] + 's';
+                    else notation = RANKS[j] + RANKS[i] + 'o';
+
+                    cell.textContent = notation;
+
+                    // 색상 적용
+                    if (currentMode === 'rfi') {
+                        if (currentPosition === 'SB') {
+                            if (range?.raiseValue?.includes(notation)) cell.classList.add('value');
+                            else if (range?.raiseBluff?.includes(notation)) cell.classList.add('bluff');
+                            else if (range?.limp?.includes(notation)) cell.classList.add('call');
+                        } else {
+                            if (range?.raise?.includes(notation)) cell.classList.add('raise');
+                        }
+                    } else if (currentMode === 'facing') {
+                        if (range?.value?.includes(notation)) cell.classList.add('value');
+                        else if (range?.bluff?.includes(notation)) cell.classList.add('bluff');
+                        else if (range?.call?.includes(notation)) cell.classList.add('call');
+                    } else {
+                        if (range?.fourBetValue?.includes(notation)) cell.classList.add('value');
+                        else if (range?.fourBetBluff?.includes(notation)) cell.classList.add('bluff');
+                        else if (range?.call?.includes(notation)) cell.classList.add('call');
+                    }
+
+                    if (notation === currentHand?.notation) cell.classList.add('current');
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        // 새 핸드
+        function newHand() {
+            const cards = generateHand();
+            currentHand = {
+                cards: cards,
+                notation: getHandNotation(cards[0], cards[1])
+            };
+
+            // 포지션 결정
+            if (currentMode === 'rfi') {
+                const positions = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB'];
+                currentPosition = selectedPositionMode === 'random'
+                    ? positions[Math.floor(Math.random() * positions.length)]
+                    : selectedPositionMode;
+                currentVsPosition = null;
+            } else if (currentMode === 'facing') {
+                const scenarios = Object.keys(FACING_RFI_RANGES);
+                let scenario;
+                if (selectedPositionMode === 'random') {
+                    // 가장 많이 사용되는 시나리오들 위주로 랜덤 선택
+                    const commonScenarios = [
+                        'HJ_vs_UTG', 'HJ_vs_LJ',
+                        'CO_vs_UTG', 'CO_vs_LJ', 'CO_vs_HJ',
+                        'BTN_vs_UTG', 'BTN_vs_LJ', 'BTN_vs_HJ', 'BTN_vs_CO',
+                        'SB_vs_UTG', 'SB_vs_CO', 'SB_vs_BTN',
+                        'BB_vs_UTG', 'BB_vs_LJ', 'BB_vs_HJ', 'BB_vs_CO', 'BB_vs_BTN', 'BB_vs_SB'
+                    ];
+                    scenario = commonScenarios[Math.floor(Math.random() * commonScenarios.length)];
+                } else {
+                    scenario = selectedPositionMode;
+                }
+                const parts = scenario.split('_vs_');
+                currentPosition = parts[0];
+                currentVsPosition = parts[1];
+            } else if (currentMode === 'cbet') {
+                // C-bet 모드: IP가 오픈, BB가 콜한 상황
+                const scenarios = ['BTN_vs_BB', 'CO_vs_BB', 'SB_vs_BB'];
+                let scenario;
+                if (selectedPositionMode === 'random' || selectedPositionMode === 'IP_vs_BB') {
+                    scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+                } else {
+                    scenario = selectedPositionMode;
+                }
+                const parts = scenario.split('_vs_');
+                currentPosition = parts[0];
+                currentVsPosition = parts[1];
+
+                // 플랍 생성
+                currentBoard = generateFlop(cards);
+                currentBoardTexture = analyzeBoardTexture(currentBoard);
+                currentHandStrength = evaluateHandStrength(cards, currentBoard);
+            } else {
+                const positions = ['UTG', 'LJ', 'HJ', 'CO', 'BTN', 'SB'];
+                currentPosition = selectedPositionMode === 'random'
+                    ? positions[Math.floor(Math.random() * positions.length)]
+                    : selectedPositionMode;
+                // 3bet 상대 포지션 결정 (히어로보다 뒤 포지션에서 3bet)
+                const heroIdx = POSITION_ORDER.indexOf(currentPosition);
+                const possibleVillains = POSITION_ORDER.slice(heroIdx + 1);
+                currentVsPosition = possibleVillains[Math.floor(Math.random() * possibleVillains.length)] || 'BB';
+            }
+
+            // 시나리오 텍스트
+            let scenarioText, posInfo;
+            if (currentMode === 'rfi') {
+                scenarioText = `${currentPosition}에서 폴드로 돌아왔습니다. 어떻게 하시겠습니까?`;
+                posInfo = POSITION_INFO[currentPosition];
+            } else if (currentMode === 'facing') {
+                scenarioText = `${currentVsPosition}가 오픈했습니다. ${currentPosition}에서 어떻게 하시겠습니까?`;
+                posInfo = `${currentVsPosition} 오픈 vs ${currentPosition}`;
+            } else if (currentMode === 'cbet') {
+                scenarioText = `${currentPosition}에서 오픈, ${currentVsPosition}가 콜. 플랍에서 C-bet?`;
+                posInfo = `${currentPosition} RFI → ${currentVsPosition} 콜 → 플랍`;
+            } else {
+                scenarioText = `${currentPosition}에서 오픈 후 ${currentVsPosition}에서 3bet을 받았습니다.`;
+                posInfo = `${currentPosition} RFI → ${currentVsPosition} 3bet`;
+            }
+
+            document.getElementById('scenarioText').textContent = scenarioText;
+            document.getElementById('positionInfo').textContent = posInfo;
+
+            // 테이블 업데이트
+            if (currentMode === 'rfi') {
+                updateTableDisplay(currentPosition, null);
+            } else {
+                updateTableDisplay(currentPosition, currentVsPosition);
+            }
+
+            // 보드 표시 (C-bet 모드)
+            const boardSection = document.getElementById('boardSection');
+            const handStrengthEl = document.getElementById('handStrength');
+            if (currentMode === 'cbet') {
+                boardSection.classList.add('visible');
+                updateBoardDisplay(currentBoard);
+                document.getElementById('boardTexture').innerHTML =
+                    currentBoardTexture.tags.map(t => `<span class="texture-tag">${t}</span>`).join('');
+                handStrengthEl.style.display = 'none'; // 선택 전에는 숨김
+            } else {
+                boardSection.classList.remove('visible');
+                handStrengthEl.style.display = 'none';
+            }
+
+            // 카드 표시
+            updateCardDisplay(cards[0], 'card1');
+            updateCardDisplay(cards[1], 'card2');
+            document.getElementById('handInfo').textContent = `${currentHand.notation} (${getHandDescription(currentHand.notation)})`;
+
+            // 버튼/UI 상태
+            updateActionButtons();
+            updateLegend();
+            document.querySelectorAll('#actionButtons .btn').forEach(btn => btn.disabled = false);
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+
+            // 차트 숨기기
+            document.querySelector('.chart-section').classList.remove('visible');
+        }
+
+        // 결정 처리
+        function makeDecision(action) {
+            let correctAction;
+            if (currentMode === 'rfi') {
+                correctAction = getCorrectAction_RFI(currentHand.notation, currentPosition);
+            } else if (currentMode === 'facing') {
+                correctAction = getCorrectAction_Facing(currentHand.notation, currentPosition, currentVsPosition);
+            } else if (currentMode === 'cbet') {
+                correctAction = currentHandStrength.shouldCbet ? 'cbet' : 'check';
+            } else {
+                correctAction = getCorrectAction_Vs3bet(currentHand.notation, currentPosition);
+            }
+
+            const isCorrect = action === correctAction;
+
+            if (isCorrect) correctCount++;
+            else wrongCount++;
+            updateScore();
+
+            // 결과 표시
+            const resultEl = document.getElementById('result');
+            resultEl.style.display = 'block';
+            resultEl.className = 'result ' + (isCorrect ? 'correct' : 'wrong');
+            document.getElementById('resultTitle').textContent = isCorrect ? '✓ 정답!' : '✗ 오답!';
+
+            // 설명
+            let explanation = '';
+            const hand = currentHand.notation;
+
+            if (currentMode === 'rfi') {
+                const range = RFI_RANGES[currentPosition];
+                if (correctAction === 'raise') {
+                    explanation = `<strong>${hand}</strong>은(는) ${currentPosition}의 RFI 레인지에 포함됩니다.`;
+                } else if (correctAction === 'limp') {
+                    explanation = `<strong>${hand}</strong>은(는) SB에서 림프하는 핸드입니다. 밸류가 부족하지만 완전히 버리기엔 아깝습니다.`;
+                } else {
+                    explanation = `<strong>${hand}</strong>은(는) ${currentPosition}에서 너무 약합니다. 폴드가 정답입니다.`;
+                }
+            } else if (currentMode === 'facing') {
+                const key = `${currentPosition}_vs_${currentVsPosition}`;
+                const range = FACING_RFI_RANGES[key];
+                if (correctAction === '3bet') {
+                    const isValue = range?.value?.includes(hand);
+                    explanation = `<strong>${hand}</strong>은(는) ${isValue ? '밸류' : '블러프'}로 3bet합니다. ${isValue ? '강한 핸드로 팟을 키웁니다.' : '블로커가 있고 플레이어빌리티가 좋습니다.'}`;
+                } else if (correctAction === 'call') {
+                    explanation = `<strong>${hand}</strong>은(는) 콜하기 좋은 핸드입니다. 3bet하기엔 약하지만 폴드하기엔 강합니다.`;
+                } else {
+                    explanation = `<strong>${hand}</strong>은(는) ${currentVsPosition}의 오픈 레인지를 상대로 너무 약합니다. 폴드가 정답입니다.`;
+                }
+            } else {
+                const key = currentPosition === 'SB' ? 'SB_vs_BB_3bet' : `${currentPosition}_vs_3bet`;
+                const range = VS_3BET_RANGES[key];
+                if (correctAction === '4bet') {
+                    const isValue = range?.fourBetValue?.includes(hand);
+                    explanation = `<strong>${hand}</strong>은(는) ${isValue ? '밸류' : '블러프'}로 4bet합니다. ${isValue ? '프리미엄 핸드로 팟을 키웁니다.' : 'Ax 블로커로 상대 5bet 레인지를 블로킹합니다.'}`;
+                } else if (correctAction === 'call') {
+                    explanation = `<strong>${hand}</strong>은(는) 3bet에 콜합니다. 4bet하기엔 약하지만 팟 오즈가 좋고 플레이어빌리티가 있습니다.`;
+                } else {
+                    explanation = `<strong>${hand}</strong>은(는) 3bet을 상대로 너무 약합니다. 폴드가 정답입니다.`;
+                }
+            }
+
+            // C-bet 모드 설명
+            if (currentMode === 'cbet') {
+                const strength = currentHandStrength;
+                explanation = `<strong>${strength.name}</strong> (강도: ${strength.value}/100)<br><br>`;
+
+                if (strength.draws.length > 0) {
+                    explanation += `드로우: ${strength.draws.join(', ')}<br>`;
+                }
+
+                explanation += `<br>${strength.reason}`;
+
+                // 핸드 강도 표시
+                document.getElementById('handStrength').style.display = 'block';
+                document.getElementById('strengthValue').textContent = strength.name;
+            }
+
+            if (!isCorrect) {
+                const actionNames = {'raise':'레이즈','fold':'폴드','call':'콜','limp':'림프','3bet':'3bet','4bet':'4bet','cbet':'C-bet','check':'체크'};
+                explanation += `<br><br>정답: <strong>${actionNames[correctAction]}</strong>`;
+            }
+
+            document.getElementById('resultExplanation').innerHTML = explanation;
+
+            // 버튼 상태
+            document.querySelectorAll('#actionButtons .btn').forEach(btn => btn.disabled = true);
+            document.getElementById('nextBtn').style.display = 'inline-block';
+
+            // 차트 표시 (C-bet 모드 제외)
+            if (currentMode !== 'cbet') {
+                document.querySelector('.chart-section').classList.add('visible');
+                createChart();
+            }
+        }
+
+        // 스코어 업데이트
+        function updateScore() {
+            document.getElementById('correctCount').textContent = correctCount;
+            document.getElementById('wrongCount').textContent = wrongCount;
+            const total = correctCount + wrongCount;
+            document.getElementById('accuracy').textContent = total > 0 ? Math.round((correctCount / total) * 100) + '%' : '0%';
+        }
+
+        // 모드 변경
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMode = btn.dataset.mode;
+                selectedPositionMode = 'random';
+                updatePositionSelector();
+                newHand();
+            });
+        });
+
+        // 키보드 단축키
+        document.addEventListener('keydown', (e) => {
+            // 모달이 열려있으면 게임 단축키 무시
+            const modal = document.getElementById('glossaryModal');
+            if (modal && modal.classList.contains('open')) return;
+
+            const btns = document.querySelectorAll('#actionButtons .btn:not(:disabled)');
+            if (btns.length === 0 && e.key !== ' ' && e.key !== 'Enter') return;
+
+            switch(e.key.toLowerCase()) {
+                case 'r': makeDecision('raise'); break;
+                case 'f': makeDecision('fold'); break;
+                case 'c': makeDecision('call'); break;
+                case 'l': makeDecision('limp'); break;
+                case '3': makeDecision('3bet'); break;
+                case '4': makeDecision('4bet'); break;
+                case 'b': makeDecision('cbet'); break;
+                case 'x': makeDecision('check'); break;
+                case ' ':
+                case 'Enter':
+                    if (document.getElementById('nextBtn').style.display !== 'none') newHand();
+                    break;
+            }
+        });
+
+        // 초기화
+        updatePositionSelector();
+        newHand();
+
+        // ========================================
+        // 용어사전 함수
+        // ========================================
+        function openGlossary() {
+            document.getElementById('glossaryModal').classList.add('open');
+        }
+
+        function closeGlossary() {
+            document.getElementById('glossaryModal').classList.remove('open');
+        }
+
+        // 모달 바깥 클릭시 닫기 (이벤트 위임)
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'glossaryModal') {
+                closeGlossary();
+            }
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeGlossary();
+            }
+        });
+    </script>
+
+    <!-- 용어사전 모달 -->
+    <div class="modal-overlay" id="glossaryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>📖 홀덤 용어사전</h2>
+                <button class="modal-close" onclick="closeGlossary()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="glossary-category">
+                    <h3>🎯 게임 모드</h3>
+                    <div class="glossary-item">
+                        <div class="glossary-term">RFI (Raise First In)</div>
+                        <div class="glossary-def">아무도 레이즈하지 않았을 때 처음으로 레이즈하는 것. "오픈"이라고도 함. 앞 사람들이 모두 폴드했을 때 내가 레이즈할지 폴드할지 결정하는 상황.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">Facing RFI</div>
+                        <div class="glossary-def">상대방이 먼저 오픈(RFI)했을 때 내가 어떻게 대응할지 결정하는 상황. 3bet(리레이즈), 콜, 폴드 중 선택.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">3bet</div>
+                        <div class="glossary-def">오픈 레이즈에 대한 리레이즈. 블라인드(1bet) → 오픈(2bet) → 3bet 순서. 강한 핸드로 밸류 또는 블러프로 사용.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">4bet</div>
+                        <div class="glossary-def">3bet에 대한 리레이즈. 매우 강한 핸드(AA, KK 등)나 블러프로 사용.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">C-bet (Continuation Bet)</div>
+                        <div class="glossary-def">프리플랍에서 마지막으로 레이즈한 사람이 플랍에서 계속해서 베팅하는 것. 이니셔티브를 유지하는 베팅.</div>
+                    </div>
+                </div>
+
+                <div class="glossary-category">
+                    <h3>🪑 포지션 (9인 테이블 기준)</h3>
+                    <div class="glossary-item">
+                        <div class="glossary-term">UTG (Under The Gun)</div>
+                        <div class="glossary-def">빅블라인드 다음으로 첫 번째 행동. 가장 불리한 포지션으로 타이트하게 플레이.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">UTG+1, UTG+2</div>
+                        <div class="glossary-def">UTG 다음 포지션들. 얼리 포지션(EP)으로 여전히 타이트하게 플레이.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">LJ (Lojack)</div>
+                        <div class="glossary-def">미들 포지션의 시작. 하이잭 바로 앞 자리.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">HJ (Hijack)</div>
+                        <div class="glossary-def">미들~레이트 포지션. 컷오프 앞 자리. 좀 더 넓은 레인지로 플레이 가능.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">CO (Cutoff)</div>
+                        <div class="glossary-def">버튼 바로 앞 자리. 레이트 포지션으로 넓은 레인지 플레이.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">BTN (Button)</div>
+                        <div class="glossary-def">딜러 버튼 위치. 가장 유리한 포지션. 포스트플랍에서 항상 마지막에 행동.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">SB (Small Blind)</div>
+                        <div class="glossary-def">소액 강제 베팅. 포스트플랍에서 첫 번째로 행동해서 불리함.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">BB (Big Blind)</div>
+                        <div class="glossary-def">대액 강제 베팅. 프리플랍 마지막 행동이지만 포스트플랍에서 OOP.</div>
+                    </div>
+                </div>
+
+                <div class="glossary-category">
+                    <h3>🃏 핸드 표기법</h3>
+                    <div class="glossary-item">
+                        <div class="glossary-term">s (Suited)</div>
+                        <div class="glossary-def">같은 무늬. 예: AKs = 에이스-킹 같은 무늬 (♠♠ 또는 ♥♥ 등)</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">o (Offsuit)</div>
+                        <div class="glossary-def">다른 무늬. 예: AKo = 에이스-킹 다른 무늬 (♠♥ 등)</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">포켓 페어</div>
+                        <div class="glossary-def">같은 숫자 두 장. 예: AA, KK, QQ, 77 등</div>
+                    </div>
+                </div>
+
+                <div class="glossary-category">
+                    <h3>📊 보드 텍스처 (C-bet)</h3>
+                    <div class="glossary-item">
+                        <div class="glossary-term">드라이 (Dry)</div>
+                        <div class="glossary-def">드로우가 적은 보드. 예: K♠ 7♥ 2♦. C-bet 하기 좋음.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">웻 (Wet)</div>
+                        <div class="glossary-def">드로우가 많은 보드. 예: J♠ T♠ 9♥. 조심해서 C-bet.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">모노톤 (Monotone)</div>
+                        <div class="glossary-def">세 장 모두 같은 무늬. 플러시 드로우/메이드 가능성 높음.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">레인보우 (Rainbow)</div>
+                        <div class="glossary-def">세 장 모두 다른 무늬. 플러시 드로우 없음.</div>
+                    </div>
+                </div>
+
+                <div class="glossary-category">
+                    <h3>💪 핸드 강도</h3>
+                    <div class="glossary-item">
+                        <div class="glossary-term">오버페어 (Overpair)</div>
+                        <div class="glossary-def">보드의 모든 카드보다 높은 포켓 페어. 예: QQ on J-7-3 보드</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">탑페어 (Top Pair)</div>
+                        <div class="glossary-def">보드의 가장 높은 카드와 페어. 키커 강도가 중요.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">TPTK (Top Pair Top Kicker)</div>
+                        <div class="glossary-def">탑페어 + 가장 높은 키커. 예: A♠K♥ on K-7-3 보드</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">드로우 (Draw)</div>
+                        <div class="glossary-def">완성되면 강한 핸드가 되는 미완성 핸드. 플러시 드로우, 스트레이트 드로우 등.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">에어 (Air)</div>
+                        <div class="glossary-def">보드와 연결이 없는 약한 핸드. 블러프로만 이길 수 있음.</div>
+                    </div>
+                </div>
+
+                <div class="glossary-category">
+                    <h3>📈 기타 용어</h3>
+                    <div class="glossary-item">
+                        <div class="glossary-term">IP (In Position)</div>
+                        <div class="glossary-def">상대방보다 뒤에서 행동. 정보 이점이 있어 유리함.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">OOP (Out Of Position)</div>
+                        <div class="glossary-def">상대방보다 먼저 행동. 정보 불이익으로 불리함.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">레인지 (Range)</div>
+                        <div class="glossary-def">특정 상황에서 플레이하는 핸드들의 집합. 차트로 표현.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">밸류 (Value)</div>
+                        <div class="glossary-def">강한 핸드로 상대의 콜을 받아 팟을 키우는 것.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">블러프 (Bluff)</div>
+                        <div class="glossary-def">약한 핸드로 베팅해서 상대를 폴드시키는 것.</div>
+                    </div>
+                    <div class="glossary-item">
+                        <div class="glossary-term">블로커 (Blocker)</div>
+                        <div class="glossary-def">상대가 특정 핸드를 가질 확률을 줄이는 카드. 예: A를 들고 있으면 상대의 AA 가능성 감소.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
