@@ -160,8 +160,7 @@
             padding: 8px 12px;
             border-radius: 6px;
             font-size: 11px;
-            max-width: 200px;
-            white-space: normal;
+            white-space: nowrap;
             text-align: center;
             z-index: 100;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
@@ -872,7 +871,9 @@
                 <button class="btn btn-raise" onclick="makeDecision('raise')">레이즈 (R)</button>
                 <button class="btn btn-fold" onclick="makeDecision('fold')">폴드 (F)</button>
             </div>
-            <button class="btn btn-next" id="nextBtn" onclick="newHand()">다음 핸드 (Space)</button>
+            <div style="text-align: center;">
+                <button class="btn btn-next" id="nextBtn" onclick="newHand()">다음 핸드 (Space)</button>
+            </div>
 
             <div class="result" id="result">
                 <div class="result-title" id="resultTitle">정답!</div>
