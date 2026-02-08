@@ -1,5 +1,7 @@
 import { RFI_RANGES, FACING_RFI_RANGES, VS_3BET_RANGES } from '@/data/ranges';
 import { RANKS } from '@/data/constants';
+import { SKILL_TREE } from '@/data/skill-tree';
+import type { Scenario } from '@/data/skill-tree';
 import { getCorrectAction_RFI, getCorrectAction_Facing, getCorrectAction_Vs3bet } from './correct-action';
 
 const ALL_HANDS: string[] = [];
@@ -133,4 +135,33 @@ function generateVs3betExplanation(hand: string, pos: string, correctAction: str
   }
   if (correctAction === 'call') return `${hand}은(는) ${pos}에서 3bet에 콜합니다. 4bet하기엔 약하지만 충분히 플레이 가능. (${pct})`;
   return `${hand}은(는) ${pos}에서 3bet을 받으면 폴드합니다. 오픈은 했지만 3bet에 버틸 만큼 강하지 않아요.`;
+}
+
+export function generateTestOutScenarios(unitId: number): (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[] {
+  const unit = SKILL_TREE.find(u => u.id === unitId);
+  if (!unit || unit.lessons.length === 0) return [];
+
+  const allScenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[] = [];
+  const lessonsCount = unit.lessons.length;
+  const perLesson = Math.max(1, Math.floor(10 / lessonsCount));
+  let remaining = 10 - perLesson * lessonsCount;
+
+  for (const lesson of unit.lessons) {
+    const count = perLesson + (remaining > 0 ? 1 : 0);
+    if (remaining > 0) remaining--;
+
+    if (lesson.quizType === 'rfi_dynamic' && lesson.positions) {
+      allScenarios.push(...generateRfiScenarios(lesson.positions, count));
+    } else if (lesson.quizType === 'facing_dynamic' && lesson.positions) {
+      allScenarios.push(...generateFacingScenarios(lesson.positions, count));
+    } else if (lesson.quizType === 'vs3bet_dynamic' && lesson.positions) {
+      allScenarios.push(...generateVs3betScenarios(lesson.positions, count));
+    } else if (lesson.scenarios) {
+      const shuffled = [...lesson.scenarios].sort(() => Math.random() - 0.5);
+      allScenarios.push(...shuffled.slice(0, count).map(s => ({ ...s, quizType: lesson.quizType })));
+    }
+  }
+
+  // 섞어서 10개 리턴
+  return allScenarios.sort(() => Math.random() - 0.5).slice(0, 10);
 }

@@ -16,9 +16,10 @@ type Props = {
   onStartLesson: (lessonId: string) => void;
   onBackToTree: () => void;
   isLessonUnlocked: (unitId: number, lessonId: string) => boolean;
+  isTestOut?: boolean;
 };
 
-export default function LessonResult({ passed, correct, total, wrong, xp, lessonId, unitId, onStartLesson, onBackToTree, isLessonUnlocked }: Props) {
+export default function LessonResult({ passed, correct, total, wrong, xp, lessonId, unitId, onStartLesson, onBackToTree, isLessonUnlocked, isTestOut }: Props) {
   const unit = SKILL_TREE.find(u => u.id === unitId);
   const lessonIdx = unit?.lessons.findIndex(l => l.id === lessonId) ?? -1;
   const nextLesson = unit?.lessons[lessonIdx + 1];
@@ -61,7 +62,17 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
     setTimeout(() => setShowButtons(true), 800);
   }, [passed, wrong, playConfettiSound]);
 
-  const emoji = passed ? (wrong === 0 ? '🌟' : '🎉') : '💔';
+  const emoji = isTestOut
+    ? (passed ? '🏆' : '📚')
+    : (passed ? (wrong === 0 ? '🌟' : '🎉') : '💔');
+
+  const title = isTestOut
+    ? (passed ? '승단 시험 통과!' : '아쉽지만 불합격...')
+    : (passed ? (wrong === 0 ? '퍼펙트!' : '레슨 완료!') : '다시 도전하세요!');
+
+  const subtitle = isTestOut
+    ? (passed ? '유닛의 모든 레슨이 완료되었습니다' : '각 레슨을 학습하며 실력을 키워보세요')
+    : (!passed ? '괜찮아요! 실수에서 배우는 거예요. 다시 한번!' : null);
 
   return (
     <div className="max-w-[400px] mx-auto mt-10 text-center">
@@ -71,8 +82,8 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
       </div>
 
       {/* Title */}
-      <div className={`text-2xl font-bold mb-2 animate-slide-up ${passed ? 'text-green-400' : 'text-red-400'}`}>
-        {passed ? (wrong === 0 ? '퍼펙트!' : '레슨 완료!') : '다시 도전하세요!'}
+      <div className={`text-2xl font-bold mb-2 animate-slide-up ${passed ? (isTestOut ? 'text-amber-400' : 'text-green-400') : 'text-red-400'}`}>
+        {title}
       </div>
 
       {/* Accuracy */}
@@ -90,34 +101,49 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
         </div>
       )}
 
-      {/* Failure encouragement */}
-      {!passed && (
+      {/* Subtitle / encouragement */}
+      {subtitle && (
         <div className="text-sm text-gray-500 mb-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          괜찮아요! 실수에서 배우는 거예요. 다시 한번!
+          {subtitle}
         </div>
       )}
 
       {/* Buttons with delayed entrance */}
       {showButtons && (
         <div className="flex flex-col gap-2.5 animate-slide-up">
-          {passed && nextLesson && isLessonUnlocked(unitId, nextLesson.id) && (
-            <button onClick={() => onStartLesson(nextLesson.id)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
-              다음 레슨
-            </button>
+          {isTestOut ? (
+            <>
+              {passed && nextUnit && nextUnit.lessons.length > 0 && (
+                <button onClick={() => onStartLesson(nextUnit.lessons[0].id)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
+                  다음 유닛: {nextUnit.title}
+                </button>
+              )}
+              <button onClick={onBackToTree} className="py-3.5 px-5 bg-gray-700 rounded-xl text-gray-200 text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
+                스킬 트리로
+              </button>
+            </>
+          ) : (
+            <>
+              {passed && nextLesson && isLessonUnlocked(unitId, nextLesson.id) && (
+                <button onClick={() => onStartLesson(nextLesson.id)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
+                  다음 레슨
+                </button>
+              )}
+              {passed && !nextLesson && nextUnit && nextUnit.lessons.length > 0 && isLessonUnlocked(nextUnit.id, nextUnit.lessons[0].id) && (
+                <button onClick={() => onStartLesson(nextUnit.lessons[0].id)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
+                  다음 유닛: {nextUnit.title}
+                </button>
+              )}
+              {!passed && (
+                <button onClick={() => onStartLesson(lessonId)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition animate-pulse-button">
+                  다시 도전
+                </button>
+              )}
+              <button onClick={onBackToTree} className="py-3.5 px-5 bg-gray-700 rounded-xl text-gray-200 text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
+                스킬 트리로
+              </button>
+            </>
           )}
-          {passed && !nextLesson && nextUnit && nextUnit.lessons.length > 0 && isLessonUnlocked(nextUnit.id, nextUnit.lessons[0].id) && (
-            <button onClick={() => onStartLesson(nextUnit.lessons[0].id)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
-              다음 유닛: {nextUnit.title}
-            </button>
-          )}
-          {!passed && (
-            <button onClick={() => onStartLesson(lessonId)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition animate-pulse-button">
-              다시 도전
-            </button>
-          )}
-          <button onClick={onBackToTree} className="py-3.5 px-5 bg-gray-700 rounded-xl text-gray-200 text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
-            스킬 트리로
-          </button>
         </div>
       )}
     </div>

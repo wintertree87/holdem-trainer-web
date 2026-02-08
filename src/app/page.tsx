@@ -10,7 +10,7 @@ import { useDailyGoal } from '@/hooks/useDailyGoal';
 import { useWrongNotes } from '@/hooks/useWrongNotes';
 import { useSound } from '@/hooks/useSound';
 import { SKILL_TREE } from '@/data/skill-tree';
-import { generateRfiScenarios, generateFacingScenarios, generateVs3betScenarios } from '@/utils/scenario';
+import { generateRfiScenarios, generateFacingScenarios, generateVs3betScenarios, generateTestOutScenarios } from '@/utils/scenario';
 import type { Scenario } from '@/data/skill-tree';
 
 import TabBar from '@/components/TabBar';
@@ -54,6 +54,7 @@ export default function Home() {
     totalHands: number;
   } | null>(null);
   const [lessonResult, setLessonResult] = useState<{ passed: boolean; correct: number; total: number; wrong: number; xp: number } | null>(null);
+  const [testOutUnitId, setTestOutUnitId] = useState<number | null>(null);
 
   // Modals
   const [showGuide, setShowGuide] = useState(false);
@@ -97,12 +98,37 @@ export default function Home() {
     const lesson = unit.lessons.find(l => l.id === lessonId);
     if (!lesson) return;
 
+    setTestOutUnitId(null);
     setActiveLessonId(lessonId);
     setActiveUnitId(unit.id);
     setLearnScreen('guide');
   }, []);
 
+  // Start test-out flow
+  const startTestOut = useCallback((unitId: number) => {
+    setTestOutUnitId(unitId);
+    setActiveUnitId(unitId);
+    setActiveLessonId(null);
+    setLearnScreen('guide');
+  }, []);
+
   const beginQuiz = useCallback(() => {
+    // Test-out mode
+    if (testOutUnitId) {
+      const scenarios = generateTestOutScenarios(testOutUnitId);
+      setLessonState({
+        scenarios,
+        currentIndex: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        maxErrors: 2,
+        totalHands: 10,
+      });
+      setLearnScreen('quiz');
+      return;
+    }
+
+    // Normal lesson mode
     if (!activeLessonId) return;
     const unit = SKILL_TREE.find(u => u.lessons.some(l => l.id === activeLessonId));
     if (!unit) return;
@@ -129,7 +155,7 @@ export default function Home() {
       totalHands: scenarios.length,
     });
     setLearnScreen('quiz');
-  }, [activeLessonId]);
+  }, [activeLessonId, testOutUnitId]);
 
   const handleAnswer = useCallback((isCorrect: boolean) => {
     setLessonState(prev => {
@@ -153,7 +179,29 @@ export default function Home() {
         const accuracy = Math.round((prev.correctCount / prev.totalHands) * 100);
 
         let xpEarned = 0;
-        if (passed && activeLessonId) {
+
+        // Test-out mode: bulk update all lessons in unit
+        if (testOutUnitId && passed) {
+          const unit = SKILL_TREE.find(u => u.id === testOutUnitId);
+          if (unit) {
+            const today = new Date().toISOString().slice(0, 10);
+            for (const lesson of unit.lessons) {
+              const prevCrown = progress[lesson.id]?.crown || 0;
+              if (prevCrown < 1) {
+                updateLesson(lesson.id, {
+                  crown: 1,
+                  bestAccuracy: Math.max(progress[lesson.id]?.bestAccuracy || 0, accuracy),
+                  attempts: (progress[lesson.id]?.attempts || 0) + 1,
+                  lastAttempt: today,
+                });
+              }
+            }
+            xpEarned = unit.lessons.length * 10;
+            addXP(xpEarned);
+          }
+        }
+        // Normal lesson mode
+        else if (passed && activeLessonId) {
           const prevCrown = progress[activeLessonId]?.crown || 0;
           let newCrown = 1;
           if (prev.wrongCount === 0) newCrown = 3;
@@ -187,12 +235,13 @@ export default function Home() {
 
       return { ...prev, currentIndex: nextIndex };
     });
-  }, [activeLessonId, progress, updateLesson, addXP]);
+  }, [activeLessonId, testOutUnitId, progress, updateLesson, addXP]);
 
   const abortLesson = useCallback(() => {
     setLearnScreen('tree');
     setActiveLessonId(null);
     setLessonState(null);
+    setTestOutUnitId(null);
   }, []);
 
   const backToTree = useCallback(() => {
@@ -200,6 +249,7 @@ export default function Home() {
     setActiveLessonId(null);
     setLessonState(null);
     setLessonResult(null);
+    setTestOutUnitId(null);
   }, []);
 
   // Loading
@@ -252,12 +302,45 @@ export default function Home() {
               openUnitId={openUnitId}
               onToggleUnit={(id) => setOpenUnitId(openUnitId === id ? null : id)}
               onStartLesson={startLesson}
+              onStartTestOut={startTestOut}
               getUnitStatus={getUnitStatus}
               isLessonUnlocked={isLessonUnlocked}
             />
           )}
 
-          {learnScreen === 'guide' && activeLesson && activeUnit && (
+          {learnScreen === 'guide' && testOutUnitId && activeUnit && (
+            <div className="max-w-[400px] mx-auto mt-10 text-center">
+              <div className="text-5xl mb-4 animate-emoji-bounce">🏆</div>
+              <div className="text-2xl font-bold text-amber-400 mb-2 animate-slide-up">승단 시험</div>
+              <div className="text-base font-bold text-gray-200 mb-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                {activeUnit.emoji} {activeUnit.title}
+              </div>
+              <div className="bg-white/5 rounded-xl p-5 mb-6 text-left animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                <div className="text-sm text-gray-300 space-y-2">
+                  <p>이 시험을 통과하면 유닛의 <span className="text-amber-400 font-bold">모든 레슨이 완료</span>됩니다.</p>
+                  <p>• 총 <span className="font-bold text-white">10문제</span> 출제</p>
+                  <p>• <span className="font-bold text-white">80% 이상</span> 정답 시 통과 (오답 2개까지 허용)</p>
+                  <p>• 유닛의 모든 레슨에서 혼합 출제됩니다</p>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2.5 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                <button
+                  onClick={beginQuiz}
+                  className="py-3.5 px-5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition"
+                >
+                  시험 시작
+                </button>
+                <button
+                  onClick={abortLesson}
+                  className="py-3.5 px-5 bg-gray-700 rounded-xl text-gray-200 text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition"
+                >
+                  돌아가기
+                </button>
+              </div>
+            </div>
+          )}
+
+          {learnScreen === 'guide' && !testOutUnitId && activeLesson && activeUnit && (
             <GuideCard
               lesson={activeLesson}
               unitEmoji={activeUnit.emoji}
@@ -274,18 +357,19 @@ export default function Home() {
             />
           )}
 
-          {learnScreen === 'result' && lessonResult && activeLessonId && (
+          {learnScreen === 'result' && lessonResult && (activeLessonId || testOutUnitId) && (
             <LessonResult
               passed={lessonResult.passed}
               correct={lessonResult.correct}
               total={lessonResult.total}
               wrong={lessonResult.wrong}
               xp={lessonResult.xp}
-              lessonId={activeLessonId}
+              lessonId={activeLessonId || ''}
               unitId={activeUnitId}
               onStartLesson={startLesson}
               onBackToTree={backToTree}
               isLessonUnlocked={isLessonUnlocked}
+              isTestOut={!!testOutUnitId}
             />
           )}
         </>

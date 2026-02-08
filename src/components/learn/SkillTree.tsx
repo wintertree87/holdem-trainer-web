@@ -8,11 +8,12 @@ type Props = {
   openUnitId: number | null;
   onToggleUnit: (id: number) => void;
   onStartLesson: (lessonId: string) => void;
+  onStartTestOut: (unitId: number) => void;
   getUnitStatus: (unitId: number) => 'locked' | 'current' | 'completed';
   isLessonUnlocked: (unitId: number, lessonId: string) => boolean;
 };
 
-export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartLesson, getUnitStatus, isLessonUnlocked }: Props) {
+export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartLesson, onStartTestOut, getUnitStatus, isLessonUnlocked }: Props) {
   let lastGroup = '';
 
   return (
@@ -102,6 +103,16 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
                     </div>
                   );
                 })}
+
+                {status === 'current' && (
+                  <button
+                    className="animate-slide-in w-full mt-3 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl text-white text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    style={{ animationDelay: `${unit.lessons.length * 0.08}s` }}
+                    onClick={(e) => { e.stopPropagation(); onStartTestOut(unit.id); }}
+                  >
+                    <span className="text-lg">🏆</span> 승단 시험
+                  </button>
+                )}
               </div>
             )}
           </div>
