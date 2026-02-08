@@ -10,7 +10,7 @@ import { useDailyGoal } from '@/hooks/useDailyGoal';
 import { useWrongNotes } from '@/hooks/useWrongNotes';
 import { useSound } from '@/hooks/useSound';
 import { SKILL_TREE } from '@/data/skill-tree';
-import { generateRfiScenarios } from '@/utils/scenario';
+import { generateRfiScenarios, generateFacingScenarios, generateVs3betScenarios } from '@/utils/scenario';
 import type { Scenario } from '@/data/skill-tree';
 
 import TabBar from '@/components/TabBar';
@@ -46,7 +46,7 @@ export default function Home() {
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
   const [activeUnitId, setActiveUnitId] = useState<number>(1);
   const [lessonState, setLessonState] = useState<{
-    scenarios: (Scenario & { quizType?: string; position?: string; hand?: string })[];
+    scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
     currentIndex: number;
     correctCount: number;
     wrongCount: number;
@@ -109,9 +109,13 @@ export default function Home() {
     const lesson = unit.lessons.find(l => l.id === activeLessonId);
     if (!lesson) return;
 
-    let scenarios: (Scenario & { quizType?: string; position?: string; hand?: string })[];
+    let scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
     if (lesson.quizType === 'rfi_dynamic' && lesson.positions) {
       scenarios = generateRfiScenarios(lesson.positions, lesson.handCount);
+    } else if (lesson.quizType === 'facing_dynamic' && lesson.positions) {
+      scenarios = generateFacingScenarios(lesson.positions, lesson.handCount);
+    } else if (lesson.quizType === 'vs3bet_dynamic' && lesson.positions) {
+      scenarios = generateVs3betScenarios(lesson.positions, lesson.handCount);
     } else {
       scenarios = (lesson.scenarios || []).map(s => ({ ...s, quizType: lesson.quizType }));
     }

@@ -116,6 +116,9 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* 13-column grid for range chart */
+.grid-cols-13 { grid-template-columns: repeat(13, 1fr); }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

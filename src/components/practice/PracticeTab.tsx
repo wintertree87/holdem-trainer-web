@@ -9,6 +9,7 @@ import { generateFlop, analyzeBoardTexture, evaluateHandStrength, type BoardText
 import { useSound } from '@/hooks/useSound';
 import PokerTable from '@/components/PokerTable';
 import GlossaryTip from '@/components/GlossaryTip';
+import RangeChart from '@/components/RangeChart';
 
 type Mode = 'rfi' | 'facing' | 'vs3bet' | 'cbet';
 
@@ -235,6 +236,17 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
                 {result.correct ? '정답!' : '오답!'}
               </div>
               <div className="text-sm text-gray-300">{result.explanation}</div>
+
+              {/* Range Chart (RFI/Facing/vs3bet only) */}
+              {mode !== 'cbet' && (
+                <RangeChart
+                  mode={mode === 'facing' ? 'facing' : mode === 'vs3bet' ? 'vs3bet' : 'rfi'}
+                  position={position}
+                  vsPosition={vsPosition || undefined}
+                  currentHand={notation}
+                />
+              )}
+
               <button onClick={newHand} className="mt-3 px-6 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
                 다음 핸드
               </button>

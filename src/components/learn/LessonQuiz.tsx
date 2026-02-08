@@ -6,10 +6,11 @@ import { SUIT_NAMES } from '@/data/constants';
 import { useSound } from '@/hooks/useSound';
 import PokerTable from '@/components/PokerTable';
 import GlossaryTip from '@/components/GlossaryTip';
+import RangeChart from '@/components/RangeChart';
 import type { Scenario } from '@/data/skill-tree';
 
 type LessonState = {
-  scenarios: (Scenario & { quizType?: string; position?: string; hand?: string })[];
+  scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
   currentIndex: number;
   correctCount: number;
   wrongCount: number;
@@ -91,7 +92,8 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
 
   if (!scenario) return null;
 
-  const isRfi = scenario.quizType === 'rfi_dynamic';
+  const isDynamic = scenario.quizType === 'rfi_dynamic' || scenario.quizType === 'facing_dynamic' || scenario.quizType === 'vs3bet_dynamic';
+  const rangeMode = scenario.quizType === 'facing_dynamic' ? 'facing' : scenario.quizType === 'vs3bet_dynamic' ? 'vs3bet' : 'rfi';
 
   return (
     <div>
@@ -137,8 +139,8 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
 
       {/* Quiz Card */}
       <div className={`bg-white/5 rounded-2xl p-6 mb-4 min-h-[300px] ${shakeCard && !isCorrect ? 'animate-shake' : ''}`}>
-        {isRfi && scenario.hand ? (
-          <RfiScenario scenario={scenario} answered={answered} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />
+        {isDynamic && scenario.hand ? (
+          <DynamicScenario scenario={scenario} answered={answered} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />
         ) : (
           <IdentifyScenario scenario={scenario} answered={answered} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />
         )}
@@ -151,6 +153,17 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
             {isCorrect ? (combo >= 5 ? '🔥 연속 정답!' : combo >= 3 ? '🎯 연속 정답!' : '정답!') : '오답!'}
           </div>
           <div className="text-sm text-gray-300 leading-6">{scenario.explanation}</div>
+
+          {/* Range Chart for dynamic quizzes */}
+          {isDynamic && scenario.position && (
+            <RangeChart
+              mode={rangeMode as 'rfi' | 'facing' | 'vs3bet'}
+              position={scenario.position}
+              vsPosition={scenario.vsPosition}
+              currentHand={scenario.hand}
+            />
+          )}
+
           <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
             계속
           </button>
@@ -160,11 +173,19 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
   );
 }
 
-function RfiScenario({ scenario, answered, selectedAnswer, onAnswer }: {
-  scenario: { hand?: string; position?: string; options: string[]; answer: string };
+function DynamicScenario({ scenario, answered, selectedAnswer, onAnswer }: {
+  scenario: { hand?: string; position?: string; vsPosition?: string; quizType?: string; options: string[]; answer: string };
   answered: boolean; selectedAnswer: string; onAnswer: (a: string) => void;
 }) {
   const cards = generateHandFromNotation(scenario.hand!);
+  const isFacing = scenario.quizType === 'facing_dynamic';
+  const isVs3bet = scenario.quizType === 'vs3bet_dynamic';
+
+  const getScenarioText = () => {
+    if (isFacing) return <><GlossaryTip term={scenario.vsPosition!}>{scenario.vsPosition}</GlossaryTip>가 오픈. <GlossaryTip term={scenario.position!}>{scenario.position}</GlossaryTip>에서 어떻게?</>;
+    if (isVs3bet) return <><GlossaryTip term={scenario.position!}>{scenario.position}</GlossaryTip>에서 오픈 후 <GlossaryTip term="3bet">3bet</GlossaryTip> 받음. 어떻게?</>;
+    return <>{scenario.hand} — <GlossaryTip term={scenario.position!}>{scenario.position}</GlossaryTip>에서 어떻게?</>;
+  };
 
   return (
     <>
@@ -173,7 +194,7 @@ function RfiScenario({ scenario, answered, selectedAnswer, onAnswer }: {
           <span className="inline-block bg-indigo-500 text-white px-4 py-1 rounded-full text-sm font-bold">{scenario.position}</span>
         </GlossaryTip>
       </div>
-      <PokerTable heroPosition={scenario.position!} className="mb-3" />
+      <PokerTable heroPosition={scenario.position!} villainPosition={isFacing || isVs3bet ? scenario.vsPosition : undefined} className="mb-3" />
       <div className="flex justify-center gap-2.5 mb-4">
         {cards.map((card, i) => (
           <div
@@ -189,7 +210,7 @@ function RfiScenario({ scenario, answered, selectedAnswer, onAnswer }: {
         ))}
       </div>
       <div className="text-center text-base font-bold text-gray-200 mb-5">
-        {scenario.hand} — <GlossaryTip term={scenario.position!}>{scenario.position}</GlossaryTip>에서 어떻게?
+        {getScenarioText()}
       </div>
       <OptionButtons options={scenario.options} answer={scenario.answer} answered={answered} selectedAnswer={selectedAnswer} onAnswer={onAnswer} />
     </>
