@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { useUser } from '@/hooks/useUser';
 import { useProgress } from '@/hooks/useProgress';
 import { useXP } from '@/hooks/useXP';
 import { useStats } from '@/hooks/useStats';
 import { useDailyGoal } from '@/hooks/useDailyGoal';
 import { useWrongNotes } from '@/hooks/useWrongNotes';
+import { useSound } from '@/hooks/useSound';
 import { SKILL_TREE } from '@/data/skill-tree';
 import { generateRfiScenarios } from '@/utils/scenario';
 import type { Scenario } from '@/data/skill-tree';
@@ -29,10 +31,11 @@ type LearnScreen = 'tree' | 'guide' | 'quiz' | 'result';
 export default function Home() {
   const { user, loading: userLoading, signOut } = useUser();
   const { progress, loading: progressLoading, updateLesson } = useProgress();
-  const { totalXP, addXP, currentLevel, nextLevel, progressPct } = useXP();
+  const { totalXP, addXP, currentLevel, nextLevel, progressPct, levelUpInfo, dismissLevelUp } = useXP();
   const { stats, recordResult, total, accuracy } = useStats();
   const { todayCount, increment, isComplete, percentage } = useDailyGoal();
   const { notes, addNote, clearNotes } = useWrongNotes();
+  const { muted, toggleMute, playLevelUp } = useSound();
 
   // Tab state
   const [activeTab, setActiveTab] = useState<Tab>('learn');
@@ -214,6 +217,9 @@ export default function Home() {
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-lg font-bold text-gray-200">Holdem Trainer</h1>
         <div className="flex items-center gap-2">
+          <button onClick={toggleMute} className="text-lg" title={muted ? '소리 켜기' : '소리 끄기'}>
+            {muted ? '🔇' : '🔊'}
+          </button>
           <button onClick={() => setShowGuide(true)} className="text-lg" title="공략집">📚</button>
           <button onClick={() => setShowGlossary(true)} className="text-lg" title="용어사전">📖</button>
           {user && (
@@ -294,6 +300,15 @@ export default function Home() {
         />
       )}
 
+      {/* Level Up Overlay */}
+      {levelUpInfo && (
+        <LevelUpOverlay
+          newLevel={levelUpInfo.newLevel}
+          onDismiss={dismissLevelUp}
+          playLevelUp={playLevelUp}
+        />
+      )}
+
       {/* Guide Overlay */}
       {showGuide && <GuideOverlay onClose={() => setShowGuide(false)} />}
 
@@ -312,6 +327,54 @@ export default function Home() {
 
       {/* Glossary Modal */}
       {showGlossary && <GlossaryModal onClose={() => setShowGlossary(false)} />}
+    </div>
+  );
+}
+
+// Level Up Overlay Component
+function LevelUpOverlay({ newLevel, onDismiss, playLevelUp }: {
+  newLevel: { level: number; title: string };
+  onDismiss: () => void;
+  playLevelUp: () => void;
+}) {
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+
+    playLevelUp();
+    setTimeout(() => {
+      confetti({
+        particleCount: 100,
+        spread: 90,
+        origin: { y: 0.5 },
+        colors: ['#ffd700', '#ffaa00', '#fff', '#6366f1'],
+        shapes: ['star', 'circle'],
+      });
+    }, 300);
+
+    const timer = setTimeout(onDismiss, 3000);
+    return () => clearTimeout(timer);
+  }, [onDismiss, playLevelUp]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onDismiss}
+    >
+      <div className="text-center" onClick={e => e.stopPropagation()}>
+        <div className="text-6xl mb-4 animate-emoji-bounce">🏆</div>
+        <div className="text-3xl font-black text-amber-400 animate-level-up-text mb-2">
+          LEVEL UP!
+        </div>
+        <div className="text-xl font-bold text-white animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          Lv.{newLevel.level} {newLevel.title}
+        </div>
+        <div className="text-sm text-gray-400 mt-4 animate-slide-up" style={{ animationDelay: '0.6s' }}>
+          탭하여 계속
+        </div>
+      </div>
     </div>
   );
 }

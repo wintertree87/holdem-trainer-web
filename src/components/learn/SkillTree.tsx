@@ -36,12 +36,12 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
             )}
 
             <div
-              className={`flex flex-col items-center mb-2 cursor-pointer transition hover:scale-[1.02] ${status === 'locked' ? 'opacity-60' : ''}`}
+              className={`flex flex-col items-center mb-2 cursor-pointer transition-all duration-300 hover:scale-[1.02] ${status === 'locked' ? 'opacity-50 grayscale blur-[0.5px]' : ''}`}
               onClick={() => status !== 'locked' && onToggleUnit(unit.id)}
             >
               <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold border-[3px] transition-all ${
                 status === 'locked' ? 'bg-gray-800 border-gray-700 text-gray-600' :
-                status === 'current' ? 'bg-gradient-to-br from-indigo-500 to-indigo-400 border-indigo-300 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]' :
+                status === 'current' ? 'bg-gradient-to-br from-indigo-500 to-indigo-400 border-indigo-300 text-white animate-float animate-pulse-glow' :
                 'bg-gradient-to-br from-green-500 to-green-600 border-green-400 text-white'
               }`}>
                 {status === 'locked' ? '🔒' : unit.emoji}
@@ -50,13 +50,17 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
               <div className={`text-[11px] ${status === 'locked' ? 'text-gray-700' : 'text-gray-500'}`}>{unit.subtitle}</div>
 
               {unit.lessons.length > 0 && status !== 'locked' && (
-                <div className="flex gap-1 mt-1">
+                <div className="flex gap-1.5 mt-1">
                   {unit.lessons.map(l => {
                     const crown = progress[l.id]?.crown || 0;
                     return (
-                      <div key={l.id} className={`w-2.5 h-2.5 rounded-full ${
-                        crown >= 3 ? 'bg-amber-600' : crown >= 2 ? 'bg-amber-500' : crown >= 1 ? 'bg-amber-400' : 'bg-gray-700'
-                      }`} />
+                      <div key={l.id} className={`flex items-center justify-center ${
+                        crown >= 3 ? 'text-amber-400 text-xs drop-shadow-[0_0_3px_rgba(251,191,36,0.6)]' :
+                        crown >= 1 ? 'text-amber-500 text-xs' :
+                        'text-gray-700 text-xs'
+                      }`}>
+                        {crown >= 1 ? '★' : '·'}
+                      </div>
                     );
                   })}
                 </div>
@@ -65,15 +69,16 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
 
             {isOpen && unit.lessons.length > 0 && (
               <div className="max-w-[400px] mx-auto mb-4 bg-white/5 rounded-xl p-4">
-                {unit.lessons.map(lesson => {
+                {unit.lessons.map((lesson, lessonIdx) => {
                   const unlocked = isLessonUnlocked(unit.id, lesson.id);
                   const crown = progress[lesson.id]?.crown || 0;
                   return (
                     <div
                       key={lesson.id}
-                      className={`flex items-center p-2.5 rounded-lg mb-1.5 transition ${
+                      className={`animate-slide-in flex items-center p-2.5 rounded-lg mb-1.5 transition ${
                         unlocked ? 'cursor-pointer hover:bg-white/5' : 'opacity-40 cursor-default'
                       }`}
+                      style={{ animationDelay: `${lessonIdx * 0.08}s` }}
                       onClick={() => unlocked && onStartLesson(lesson.id)}
                     >
                       <div className={`w-9 h-9 rounded-full flex items-center justify-center text-base mr-3 flex-shrink-0 ${
@@ -87,7 +92,11 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
                       </div>
                       <div className="flex gap-[3px] ml-2">
                         {[1, 2, 3].map(i => (
-                          <span key={i} className={`text-sm ${crown >= i ? 'text-amber-400' : 'text-gray-700'}`}>★</span>
+                          <span key={i} className={`text-sm transition-all ${
+                            crown >= i
+                              ? crown >= 3 ? 'text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.6)]' : 'text-amber-400'
+                              : 'text-gray-700'
+                          }`}>★</span>
                         ))}
                       </div>
                     </div>

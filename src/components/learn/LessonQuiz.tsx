@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { generateHandFromNotation } from '@/utils/hand';
 import { SUIT_NAMES } from '@/data/constants';
+import { useSound } from '@/hooks/useSound';
+import PokerTable from '@/components/PokerTable';
+import GlossaryTip from '@/components/GlossaryTip';
 import type { Scenario } from '@/data/skill-tree';
 
 type LessonState = {
@@ -29,10 +32,22 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
   const [answered, setAnswered] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState('');
   const [isCorrect, setIsCorrect] = useState(false);
+  const [combo, setCombo] = useState(0);
+  const [shakeCard, setShakeCard] = useState(false);
+  const [breakingHeart, setBreakingHeart] = useState(false);
+  const [comboFlash, setComboFlash] = useState(false);
+  const { playCorrect, playWrong, playCombo } = useSound();
+  const prevIndexRef = useRef(currentIndex);
 
   useEffect(() => {
-    setAnswered(false);
-    setSelectedAnswer('');
+    if (currentIndex !== prevIndexRef.current) {
+      setAnswered(false);
+      setSelectedAnswer('');
+      setShakeCard(false);
+      setBreakingHeart(false);
+      setComboFlash(false);
+      prevIndexRef.current = currentIndex;
+    }
   }, [currentIndex]);
 
   const handleAnswer = useCallback((action: string) => {
@@ -42,7 +57,24 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
     setSelectedAnswer(action);
     setIsCorrect(correct);
     onAnswer(correct);
-  }, [answered, scenario, onAnswer]);
+
+    if (correct) {
+      const newCombo = combo + 1;
+      setCombo(newCombo);
+      if (newCombo >= 3) {
+        playCombo();
+        setComboFlash(true);
+        if (newCombo >= 5 && navigator.vibrate) navigator.vibrate(100);
+      } else {
+        playCorrect();
+      }
+    } else {
+      setCombo(0);
+      playWrong();
+      setShakeCard(true);
+      setBreakingHeart(true);
+    }
+  }, [answered, scenario, onAnswer, combo, playCorrect, playWrong, playCombo]);
 
   const handleNext = useCallback(() => {
     onNext();
@@ -63,17 +95,48 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
 
   return (
     <div>
+      {/* Progress + Hearts */}
       <div className="flex items-center gap-3 mb-5">
         <button onClick={onAbort} className="text-gray-400 hover:text-white text-xl p-1">✕</button>
         <div className="flex-1 h-2.5 bg-gray-700 rounded overflow-hidden">
           <div className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded transition-all duration-300" style={{ width: `${progressPct}%` }} />
         </div>
-        <div className="text-lg whitespace-nowrap">
-          {Array.from({ length: maxErrors }, (_, i) => i < heartsRemaining ? '❤️' : '🖤').join('')}
+        <div className="text-lg whitespace-nowrap flex gap-0.5">
+          {Array.from({ length: maxErrors }, (_, i) => {
+            const isLast = i === heartsRemaining && breakingHeart;
+            const isAlive = i < heartsRemaining;
+            return (
+              <span
+                key={i}
+                className={isLast ? 'animate-heart-break inline-block' : isAlive ? 'inline-block transition-transform' : 'inline-block opacity-40'}
+              >
+                {isAlive || isLast ? '❤️' : '🖤'}
+              </span>
+            );
+          })}
         </div>
       </div>
 
-      <div className="bg-white/5 rounded-2xl p-6 mb-4 min-h-[300px]">
+      {/* Combo Streak */}
+      {combo >= 3 && (
+        <div className="text-center mb-3 animate-slide-up">
+          <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${
+            combo >= 5 ? 'bg-red-500/20 text-red-400 animate-combo-fire' : 'bg-amber-500/20 text-amber-400'
+          }`}>
+            {combo >= 5 ? '🔥 On Fire! ' : '🔥 '}{combo} Streak!
+          </span>
+        </div>
+      )}
+
+      {/* Combo ambient flash overlay */}
+      {comboFlash && answered && isCorrect && combo >= 3 && (
+        <div className={`fixed inset-0 pointer-events-none z-50 transition-opacity duration-500 ${
+          combo >= 5 ? 'bg-gradient-to-b from-red-500/10 to-transparent' : 'bg-gradient-to-b from-amber-500/8 to-transparent'
+        }`} style={{ animation: 'slide-up 0.5s ease-out both' }} />
+      )}
+
+      {/* Quiz Card */}
+      <div className={`bg-white/5 rounded-2xl p-6 mb-4 min-h-[300px] ${shakeCard && !isCorrect ? 'animate-shake' : ''}`}>
         {isRfi && scenario.hand ? (
           <RfiScenario scenario={scenario} answered={answered} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />
         ) : (
@@ -81,13 +144,14 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
         )}
       </div>
 
+      {/* Feedback */}
       {answered && (
-        <div className={`p-4 rounded-xl mt-4 ${isCorrect ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+        <div className={`animate-slide-up p-4 rounded-xl mt-4 ${isCorrect ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
           <div className={`text-base font-bold mb-1.5 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-            {isCorrect ? '정답!' : '오답!'}
+            {isCorrect ? (combo >= 5 ? '🔥 연속 정답!' : combo >= 3 ? '🎯 연속 정답!' : '정답!') : '오답!'}
           </div>
           <div className="text-sm text-gray-300 leading-6">{scenario.explanation}</div>
-          <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600">
+          <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
             계속
           </button>
         </div>
@@ -104,21 +168,28 @@ function RfiScenario({ scenario, answered, selectedAnswer, onAnswer }: {
 
   return (
     <>
-      <div className="text-center mb-4">
-        <span className="inline-block bg-indigo-500 text-white px-4 py-1 rounded-full text-sm font-bold">{scenario.position}</span>
+      <div className="text-center mb-3">
+        <GlossaryTip term={scenario.position!}>
+          <span className="inline-block bg-indigo-500 text-white px-4 py-1 rounded-full text-sm font-bold">{scenario.position}</span>
+        </GlossaryTip>
       </div>
+      <PokerTable heroPosition={scenario.position!} className="mb-3" />
       <div className="flex justify-center gap-2.5 mb-4">
         {cards.map((card, i) => (
-          <div key={i} className={`w-[70px] h-[95px] bg-white rounded-lg flex flex-col items-center justify-center font-bold shadow-lg ${
-            card.suit === '♥' || card.suit === '♦' ? 'text-red-600' : 'text-gray-800'
-          }`}>
+          <div
+            key={i}
+            className={`animate-card-deal w-[70px] h-[95px] bg-white rounded-lg flex flex-col items-center justify-center font-bold shadow-lg ${
+              card.suit === '♥' || card.suit === '♦' ? 'text-red-600' : 'text-gray-800'
+            }`}
+            style={{ animationDelay: `${i * 0.15}s` }}
+          >
             <div className="text-2xl">{card.rank}</div>
             <div className="text-3xl">{card.suit}</div>
           </div>
         ))}
       </div>
       <div className="text-center text-base font-bold text-gray-200 mb-5">
-        {scenario.hand} — {scenario.position}에서 어떻게?
+        {scenario.hand} — <GlossaryTip term={scenario.position!}>{scenario.position}</GlossaryTip>에서 어떻게?
       </div>
       <OptionButtons options={scenario.options} answer={scenario.answer} answered={answered} selectedAnswer={selectedAnswer} onAnswer={onAnswer} />
     </>
@@ -131,7 +202,7 @@ function IdentifyScenario({ scenario, answered, selectedAnswer, onAnswer }: {
 }) {
   return (
     <>
-      {scenario.show && <div className="text-center text-3xl font-bold text-amber-400 mb-4 tracking-wider">{scenario.show}</div>}
+      {scenario.show && <div className="text-center text-3xl font-bold text-amber-400 mb-4 tracking-wider animate-card-deal">{scenario.show}</div>}
       <div className="text-center text-base font-bold text-gray-200 mb-5 leading-6">{scenario.question}</div>
       <OptionButtons options={scenario.options} answer={scenario.answer} answered={answered} selectedAnswer={selectedAnswer} onAnswer={onAnswer} />
     </>
@@ -148,11 +219,11 @@ function OptionButtons({ options, answer, answered, selectedAnswer, onAnswer }: 
           key={opt}
           disabled={answered}
           onClick={() => onAnswer(opt)}
-          className={`py-3.5 px-5 rounded-xl text-[15px] font-medium text-left border-2 transition ${
-            answered && opt === answer ? 'border-green-500 bg-green-500/15 text-green-400' :
+          className={`py-3.5 px-5 rounded-xl text-[15px] font-medium text-left border-2 transition-all duration-200 ${
+            answered && opt === answer ? 'border-green-500 bg-green-500/15 text-green-400 scale-[1.02]' :
             answered && opt === selectedAnswer && opt !== answer ? 'border-red-500 bg-red-500/15 text-red-400' :
             answered ? 'border-gray-700 bg-gray-800 text-gray-500' :
-            'border-gray-700 bg-gray-800 text-gray-200 hover:border-indigo-500 hover:bg-indigo-500/10'
+            'border-gray-700 bg-gray-800 text-gray-200 hover:border-indigo-500 hover:bg-indigo-500/10 active:scale-[0.98]'
           }`}
         >
           {opt}

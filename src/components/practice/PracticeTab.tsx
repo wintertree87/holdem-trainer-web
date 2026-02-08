@@ -6,6 +6,9 @@ import { RFI_RANGES, FACING_RFI_RANGES, VS_3BET_RANGES } from '@/data/ranges';
 import { generateHand, getHandNotation, getHandDescription } from '@/utils/hand';
 import { getCorrectAction_RFI, getCorrectAction_Facing, getCorrectAction_Vs3bet } from '@/utils/correct-action';
 import { generateFlop, analyzeBoardTexture, evaluateHandStrength, type BoardTexture, type HandStrength } from '@/utils/board';
+import { useSound } from '@/hooks/useSound';
+import PokerTable from '@/components/PokerTable';
+import GlossaryTip from '@/components/GlossaryTip';
 
 type Mode = 'rfi' | 'facing' | 'vs3bet' | 'cbet';
 
@@ -36,6 +39,8 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
   const [result, setResult] = useState<{ correct: boolean; action: string; myAction: string; explanation: string } | null>(null);
   const [sessionCorrect, setSessionCorrect] = useState(0);
   const [sessionWrong, setSessionWrong] = useState(0);
+  const [dealKey, setDealKey] = useState(0);
+  const { playCorrect, playWrong } = useSound();
 
   const newHand = useCallback(() => {
     const cards = generateHand();
@@ -43,6 +48,7 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
     setHand(cards);
     setNotation(nota);
     setResult(null);
+    setDealKey(k => k + 1);
 
     let pos = position;
     let vsPos: string | null = null;
@@ -94,26 +100,33 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
         : `오답. 정답은 ${ACTION_NAMES[correctAction]}입니다.`,
     });
 
-    if (isCorrect) setSessionCorrect(c => c + 1);
-    else {
+    if (isCorrect) {
+      setSessionCorrect(c => c + 1);
+      playCorrect();
+    } else {
       setSessionWrong(c => c + 1);
+      playWrong();
       onAddWrongNote({ hand: notation, position, vsPosition: vsPosition || undefined, mode, myAnswer: action, correctAnswer: correctAction });
     }
 
     onRecordResult(mode, isCorrect);
     onIncrementDaily();
-  }, [hand, result, mode, notation, position, vsPosition, handStrength, onRecordResult, onAddWrongNote, onIncrementDaily]);
+  }, [hand, result, mode, notation, position, vsPosition, handStrength, onRecordResult, onAddWrongNote, onIncrementDaily, playCorrect, playWrong]);
 
   const getActionButtons = () => {
     if (mode === 'rfi') {
       return position === 'SB'
-        ? [{ action: 'raise', label: '레이즈', cls: 'bg-green-600' }, { action: 'limp', label: '림프', cls: 'bg-blue-600' }, { action: 'fold', label: '폴드', cls: 'bg-red-600' }]
-        : [{ action: 'raise', label: '레이즈', cls: 'bg-green-600' }, { action: 'fold', label: '폴드', cls: 'bg-red-600' }];
+        ? [{ action: 'raise', label: '레이즈', color: 'from-green-600 to-green-500' }, { action: 'limp', label: '림프', color: 'from-blue-600 to-blue-500' }, { action: 'fold', label: '폴드', color: 'from-red-600 to-red-500' }]
+        : [{ action: 'raise', label: '레이즈', color: 'from-green-600 to-green-500' }, { action: 'fold', label: '폴드', color: 'from-red-600 to-red-500' }];
     }
-    if (mode === 'facing') return [{ action: '3bet', label: '3bet', cls: 'bg-purple-600' }, { action: 'call', label: '콜', cls: 'bg-blue-600' }, { action: 'fold', label: '폴드', cls: 'bg-red-600' }];
-    if (mode === 'vs3bet') return [{ action: '4bet', label: '4bet', cls: 'bg-purple-600' }, { action: 'call', label: '콜', cls: 'bg-blue-600' }, { action: 'fold', label: '폴드', cls: 'bg-red-600' }];
-    return [{ action: 'cbet', label: 'C-bet', cls: 'bg-green-600' }, { action: 'check', label: '체크', cls: 'bg-gray-600' }];
+    if (mode === 'facing') return [{ action: '3bet', label: '3bet', color: 'from-purple-600 to-purple-500' }, { action: 'call', label: '콜', color: 'from-blue-600 to-blue-500' }, { action: 'fold', label: '폴드', color: 'from-red-600 to-red-500' }];
+    if (mode === 'vs3bet') return [{ action: '4bet', label: '4bet', color: 'from-purple-600 to-purple-500' }, { action: 'call', label: '콜', color: 'from-blue-600 to-blue-500' }, { action: 'fold', label: '폴드', color: 'from-red-600 to-red-500' }];
+    return [{ action: 'cbet', label: 'C-bet', color: 'from-green-600 to-green-500' }, { action: 'check', label: '체크', color: 'from-gray-600 to-gray-500' }];
   };
+
+  // Mini donut chart
+  const sessionTotal = sessionCorrect + sessionWrong;
+  const sessionPct = sessionTotal > 0 ? Math.round((sessionCorrect / sessionTotal) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -121,23 +134,33 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
       <div className="flex gap-2 flex-wrap">
         {(['rfi', 'facing', 'vs3bet', 'cbet'] as Mode[]).map(m => (
           <button key={m} onClick={() => { setMode(m); setHand(null); setResult(null); }}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${mode === m ? 'bg-indigo-500 text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${mode === m ? 'bg-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.3)]' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}>
             {m === 'rfi' ? 'RFI' : m === 'facing' ? 'Facing RFI' : m === 'vs3bet' ? 'vs 3bet' : 'C-bet'}
           </button>
         ))}
       </div>
 
-      {/* Stats */}
-      <div className="flex gap-4 text-sm text-gray-400">
-        <span>세션: {sessionCorrect}✓ {sessionWrong}✗</span>
+      {/* Stats with mini donut */}
+      <div className="flex items-center gap-4 text-sm text-gray-400">
+        {sessionTotal > 0 && (
+          <div className="flex items-center gap-1.5">
+            <svg width="20" height="20" viewBox="0 0 20 20">
+              <circle cx="10" cy="10" r="8" fill="none" stroke="#374151" strokeWidth="3" />
+              <circle cx="10" cy="10" r="8" fill="none" stroke="#22c55e" strokeWidth="3"
+                strokeDasharray={`${(sessionPct / 100) * 50.27} 50.27`}
+                strokeDashoffset="12.57" strokeLinecap="round" />
+            </svg>
+            <span>{sessionCorrect}✓ {sessionWrong}✗</span>
+          </div>
+        )}
         <span>누적: {total}핸드 ({accuracy}%)</span>
-        <button onClick={onOpenWrongNotes} className="text-amber-400 hover:text-amber-300">오답노트</button>
+        <button onClick={onOpenWrongNotes} className="text-amber-400 hover:text-amber-300 transition">오답노트</button>
       </div>
 
       {/* Game Area */}
       {!hand ? (
         <div className="text-center py-16">
-          <button onClick={newHand} className="px-8 py-4 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-lg font-bold hover:scale-105 transition">
+          <button onClick={newHand} className="px-8 py-4 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-lg font-bold hover:scale-105 active:scale-[0.98] transition shadow-lg shadow-indigo-500/20">
             연습 시작
           </button>
         </div>
@@ -145,20 +168,23 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
         <>
           {/* Scenario */}
           <div className="text-center text-sm text-gray-400 mb-2">
-            {mode === 'rfi' && `${position}에서 폴드로 돌아왔습니다`}
-            {mode === 'facing' && `${vsPosition}가 오픈. ${position}에서 어떻게?`}
-            {mode === 'vs3bet' && `${position}에서 오픈 후 ${vsPosition}에서 3bet`}
-            {mode === 'cbet' && `${position}에서 오픈, ${vsPosition}가 콜. 플랍에서?`}
+            {mode === 'rfi' && <><GlossaryTip term={position}>{position}</GlossaryTip>에서 폴드로 돌아왔습니다</>}
+            {mode === 'facing' && <><GlossaryTip term={vsPosition!}>{vsPosition}</GlossaryTip>가 오픈. <GlossaryTip term={position}>{position}</GlossaryTip>에서 어떻게?</>}
+            {mode === 'vs3bet' && <><GlossaryTip term={position}>{position}</GlossaryTip>에서 오픈 후 {vsPosition}에서 <GlossaryTip term="3bet">3bet</GlossaryTip></>}
+            {mode === 'cbet' && <><GlossaryTip term={position}>{position}</GlossaryTip>에서 오픈, {vsPosition}가 콜. 플랍에서?</>}
           </div>
 
-          <div className="text-center text-xs text-indigo-400 mb-3">{POSITION_INFO[position] || position}</div>
+          {/* Poker Table Visualization */}
+          <PokerTable heroPosition={position} villainPosition={vsPosition} className="mb-2" />
 
           {/* Cards */}
           <div className="flex justify-center gap-3 mb-3">
             {hand.map((card, i) => (
-              <div key={i} className={`w-[70px] h-[95px] bg-white rounded-lg flex flex-col items-center justify-center font-bold shadow-lg ${
+              <div key={`${dealKey}-${i}`} className={`animate-card-deal w-[70px] h-[95px] bg-white rounded-lg flex flex-col items-center justify-center font-bold shadow-lg transition-all duration-300 ${
+                result ? (result.correct ? 'ring-2 ring-green-500 shadow-green-500/20' : 'ring-2 ring-red-500 shadow-red-500/20') : ''
+              } ${result && !result.correct ? 'animate-shake' : ''} ${
                 card.suit === '♥' || card.suit === '♦' ? 'text-red-600' : 'text-gray-800'
-              }`}>
+              }`} style={{ animationDelay: `${i * 0.15}s` }}>
                 <div className="text-2xl">{card.rank}</div>
                 <div className="text-3xl">{card.suit}</div>
               </div>
@@ -172,9 +198,9 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
             <div className="mb-4">
               <div className="flex justify-center gap-2 mb-2">
                 {board.map((card, i) => (
-                  <div key={i} className={`w-[55px] h-[75px] bg-white rounded-lg flex flex-col items-center justify-center font-bold ${
+                  <div key={`${dealKey}-b-${i}`} className={`animate-card-deal w-[55px] h-[75px] bg-white rounded-lg flex flex-col items-center justify-center font-bold ${
                     card.suit === '♥' || card.suit === '♦' ? 'text-red-600' : 'text-gray-800'
-                  }`}>
+                  }`} style={{ animationDelay: `${0.3 + i * 0.1}s` }}>
                     <div className="text-lg">{card.rank}</div>
                     <div className="text-xl">{card.suit}</div>
                   </div>
@@ -195,7 +221,7 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
             <div className="flex gap-2 justify-center">
               {getActionButtons().map(btn => (
                 <button key={btn.action} onClick={() => makeDecision(btn.action)}
-                  className={`px-6 py-3 ${btn.cls} rounded-xl text-white font-bold hover:opacity-90 transition`}>
+                  className={`px-6 py-3 bg-gradient-to-br ${btn.color} rounded-xl text-white font-bold hover:scale-105 active:scale-[0.97] transition-all duration-200 shadow-lg`}>
                   {btn.label}
                 </button>
               ))}
@@ -204,12 +230,12 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
 
           {/* Result */}
           {result && (
-            <div className={`p-4 rounded-xl ${result.correct ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+            <div className={`animate-slide-up p-4 rounded-xl ${result.correct ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
               <div className={`text-base font-bold mb-1 ${result.correct ? 'text-green-400' : 'text-red-400'}`}>
                 {result.correct ? '정답!' : '오답!'}
               </div>
               <div className="text-sm text-gray-300">{result.explanation}</div>
-              <button onClick={newHand} className="mt-3 px-6 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600">
+              <button onClick={newHand} className="mt-3 px-6 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
                 다음 핸드
               </button>
             </div>

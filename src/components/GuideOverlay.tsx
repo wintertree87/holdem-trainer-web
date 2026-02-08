@@ -84,7 +84,7 @@ export default function GuideOverlay({ onClose }: Props) {
     <div className="fixed inset-0 z-50 bg-[#0f1117] flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 flex-shrink-0">
-        <button onClick={onClose} className="text-gray-400 hover:text-white text-sm">
+        <button onClick={onClose} className="text-gray-400 hover:text-white text-sm cursor-pointer">
           &larr; 돌아가기
         </button>
         <span className="font-bold text-gray-200 text-sm">공략집</span>
@@ -93,7 +93,7 @@ export default function GuideOverlay({ onClose }: Props) {
             <button
               key={level}
               onClick={() => switchLevel(level)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
                 currentLevel === level ? 'bg-white/15 text-white' : 'text-gray-500 hover:text-gray-300'
               }`}
             >
@@ -105,20 +105,13 @@ export default function GuideOverlay({ onClose }: Props) {
       </div>
 
       {/* Body */}
-      <div ref={bodyRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-[700px] mx-auto">
+      <div ref={bodyRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-5 py-8">
+        <div className="max-w-[640px] mx-auto">
           {loading ? (
             <p className="text-center text-gray-500 py-10">로딩 중...</p>
           ) : (
             <article
-              className="prose prose-invert prose-sm max-w-none
-                prose-headings:text-gray-200 prose-h1:text-2xl prose-h2:text-xl prose-h2:border-b prose-h2:border-gray-800 prose-h2:pb-2 prose-h2:mt-8
-                prose-p:text-gray-400 prose-p:leading-7
-                prose-li:text-gray-400 prose-strong:text-gray-200
-                prose-code:text-indigo-300 prose-code:bg-white/5 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
-                prose-blockquote:border-indigo-500 prose-blockquote:text-gray-400
-                prose-table:text-sm prose-th:text-gray-300 prose-td:text-gray-400
-                prose-hr:border-gray-800"
+              className="guide-article"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           )}
@@ -129,7 +122,7 @@ export default function GuideOverlay({ onClose }: Props) {
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 w-10 h-10 bg-indigo-500 rounded-full text-white font-bold shadow-lg hover:bg-indigo-600 transition"
+          className="fixed bottom-6 right-6 w-10 h-10 bg-indigo-500 rounded-full text-white font-bold shadow-lg hover:bg-indigo-600 transition cursor-pointer"
         >
           &uarr;
         </button>
