@@ -40,5 +40,7 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login`)
+  // Redirect to / instead of /login — middleware will handle unauthenticated users.
+  // This prevents back-button with stale auth code from forcing logout.
+  return NextResponse.redirect(`${origin}/`)
 }

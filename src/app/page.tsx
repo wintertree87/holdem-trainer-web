@@ -61,6 +61,19 @@ export default function Home() {
   const [showWrongNotes, setShowWrongNotes] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
 
+  // Prevent back-button from navigating to auth pages (login/callback)
+  useEffect(() => {
+    if (!user) return;
+    window.history.replaceState({ holdemHome: true }, '', '/');
+    const handlePopState = (e: PopStateEvent) => {
+      if (!e.state?.holdemHome) {
+        window.history.pushState({ holdemHome: true }, '', '/');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [user]);
+
   // Unit/lesson unlock logic
   const getUnitStatus = useCallback((unitId: number): 'locked' | 'current' | 'completed' => {
     if (unitId === 1) {
@@ -269,7 +282,10 @@ export default function Home() {
     <div className="max-w-[500px] mx-auto px-4 py-4 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <h1 className="text-lg font-bold text-gray-200">Holdem Trainer</h1>
+        <h1
+          className="text-lg font-bold text-gray-200 cursor-pointer hover:text-white transition"
+          onClick={() => { backToTree(); setActiveTab('learn'); }}
+        >Holdem Trainer</h1>
         <div className="flex items-center gap-2">
           <button onClick={toggleMute} className="text-lg" title={muted ? '소리 켜기' : '소리 끄기'}>
             {muted ? '🔇' : '🔊'}
