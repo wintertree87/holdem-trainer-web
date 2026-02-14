@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import confetti from 'canvas-confetti';
+import { useEffect } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { useProgress } from '@/hooks/useProgress';
 import { useXP } from '@/hooks/useXP';
@@ -9,9 +8,8 @@ import { useStats } from '@/hooks/useStats';
 import { useDailyGoal } from '@/hooks/useDailyGoal';
 import { useWrongNotes } from '@/hooks/useWrongNotes';
 import { useSound } from '@/hooks/useSound';
-import { SKILL_TREE } from '@/data/skill-tree';
-import { generateRfiScenarios, generateFacingScenarios, generateVs3betScenarios, generateTestOutScenarios } from '@/utils/scenario';
-import type { Scenario } from '@/data/skill-tree';
+import { useLessonFlow } from '@/hooks/useLessonFlow';
+import { useState } from 'react';
 
 import TabBar from '@/components/TabBar';
 import XPBar from '@/components/XPBar';
@@ -24,9 +22,9 @@ import PracticeTab from '@/components/practice/PracticeTab';
 import GuideOverlay from '@/components/GuideOverlay';
 import WrongNotesModal from '@/components/modals/WrongNotesModal';
 import GlossaryModal from '@/components/modals/GlossaryModal';
+import LevelUpOverlay from '@/components/LevelUpOverlay';
 
 type Tab = 'learn' | 'practice';
-type LearnScreen = 'tree' | 'guide' | 'quiz' | 'result';
 
 export default function Home() {
   const { user, loading: userLoading, signOut } = useUser();
@@ -37,248 +35,24 @@ export default function Home() {
   const { notes, addNote, clearNotes } = useWrongNotes();
   const { muted, toggleMute, playLevelUp } = useSound();
 
+  const lesson = useLessonFlow({ progress, updateLesson, addXP });
+
   // Tab state
   const [activeTab, setActiveTab] = useState<Tab>('learn');
-
-  // Learn tab state
-  const [learnScreen, setLearnScreen] = useState<LearnScreen>('tree');
-  const [openUnitId, setOpenUnitId] = useState<number | null>(null);
-  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
-  const [activeUnitId, setActiveUnitId] = useState<number>(1);
-  const [lessonState, setLessonState] = useState<{
-    scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
-    currentIndex: number;
-    correctCount: number;
-    wrongCount: number;
-    maxErrors: number;
-    totalHands: number;
-  } | null>(null);
-  const [lessonResult, setLessonResult] = useState<{ passed: boolean; correct: number; total: number; wrong: number; xp: number } | null>(null);
-  const [testOutUnitId, setTestOutUnitId] = useState<number | null>(null);
 
   // Modals
   const [showGuide, setShowGuide] = useState(false);
   const [showWrongNotes, setShowWrongNotes] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
 
-  // Unit/lesson unlock logic
-  const getUnitStatus = useCallback((unitId: number): 'locked' | 'current' | 'completed' => {
-    const unit = SKILL_TREE.find(u => u.id === unitId)!;
-    if (!unit) return 'locked';
-
-    // Unit 0 (tutorial): always open. Auto-complete if existing user has Unit 1+ progress.
-    if (unitId === 0) {
-      const allCompleted = unit.lessons.length > 0 && unit.lessons.every(l => (progress[l.id]?.crown || 0) >= 1);
-      if (allCompleted) return 'completed';
-      // Existing user: if any Unit 1+ lesson has progress, treat Unit 0 as completed
-      const hasLaterProgress = SKILL_TREE.some(u => u.id > 0 && u.lessons.some(l => (progress[l.id]?.crown || 0) >= 1));
-      if (hasLaterProgress) return 'completed';
-      return 'current';
-    }
-
-    // All other units: check previous unit
-    const unitIndex = SKILL_TREE.findIndex(u => u.id === unitId);
-    const prevUnit = unitIndex > 0 ? SKILL_TREE[unitIndex - 1] : null;
-    if (!prevUnit) return 'locked';
-    if (prevUnit.lessons.length === 0) return 'locked';
-
-    // Check if previous unit is completed (or auto-completed for Unit 0)
-    const prevStatus = getUnitStatus(prevUnit.id);
-    if (prevStatus !== 'completed') return 'locked';
-
-    if (unit.lessons.length === 0) return 'current';
-    const allCompleted = unit.lessons.every(l => (progress[l.id]?.crown || 0) >= 1);
-    return allCompleted ? 'completed' : 'current';
-  }, [progress]);
-
-  const isLessonUnlocked = useCallback((unitId: number, lessonId: string): boolean => {
-    const status = getUnitStatus(unitId);
-    if (status === 'locked') return false;
-    const unit = SKILL_TREE.find(u => u.id === unitId);
-    if (!unit) return false;
-    const lessonIdx = unit.lessons.findIndex(l => l.id === lessonId);
-    if (lessonIdx === 0) return true;
-    const prevLesson = unit.lessons[lessonIdx - 1];
-    return (progress[prevLesson.id]?.crown || 0) >= 1;
-  }, [getUnitStatus, progress]);
-
-  // Start lesson flow
-  const startLesson = useCallback((lessonId: string) => {
-    const unit = SKILL_TREE.find(u => u.lessons.some(l => l.id === lessonId));
-    if (!unit) return;
-    const lesson = unit.lessons.find(l => l.id === lessonId);
-    if (!lesson) return;
-
-    setTestOutUnitId(null);
-    setActiveLessonId(lessonId);
-    setActiveUnitId(unit.id);
-    setLearnScreen('guide');
-  }, []);
-
-  // Start test-out flow
-  const startTestOut = useCallback((unitId: number) => {
-    setTestOutUnitId(unitId);
-    setActiveUnitId(unitId);
-    setActiveLessonId(null);
-    setLearnScreen('guide');
-  }, []);
-
-  const beginQuiz = useCallback(() => {
-    // Test-out mode
-    if (testOutUnitId) {
-      const scenarios = generateTestOutScenarios(testOutUnitId);
-      setLessonState({
-        scenarios,
-        currentIndex: 0,
-        correctCount: 0,
-        wrongCount: 0,
-        maxErrors: 2,
-        totalHands: 10,
-      });
-      setLearnScreen('quiz');
-      return;
-    }
-
-    // Normal lesson mode
-    if (!activeLessonId) return;
-    const unit = SKILL_TREE.find(u => u.lessons.some(l => l.id === activeLessonId));
-    if (!unit) return;
-    const lesson = unit.lessons.find(l => l.id === activeLessonId);
-    if (!lesson) return;
-
-    let scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
-    // Warmup: if a dynamic lesson has static scenarios, prepend them
-    const warmup = (lesson.scenarios || []).map(s => ({ ...s, quizType: 'identify' as const }));
-
-    if (lesson.quizType === 'rfi_dynamic' && lesson.positions) {
-      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
-      scenarios = [...warmup, ...generateRfiScenarios(lesson.positions, dynamicCount)];
-    } else if (lesson.quizType === 'facing_dynamic' && lesson.positions) {
-      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
-      scenarios = [...warmup, ...generateFacingScenarios(lesson.positions, dynamicCount)];
-    } else if (lesson.quizType === 'vs3bet_dynamic' && lesson.positions) {
-      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
-      scenarios = [...warmup, ...generateVs3betScenarios(lesson.positions, dynamicCount)];
-    } else {
-      scenarios = (lesson.scenarios || []).map(s => ({ ...s, quizType: lesson.quizType }));
-    }
-
-    setLessonState({
-      scenarios,
-      currentIndex: 0,
-      correctCount: 0,
-      wrongCount: 0,
-      maxErrors: lesson.maxErrors,
-      totalHands: scenarios.length,
-    });
-    setLearnScreen('quiz');
-  }, [activeLessonId, testOutUnitId]);
-
-  const handleAnswer = useCallback((isCorrect: boolean) => {
-    setLessonState(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        correctCount: prev.correctCount + (isCorrect ? 1 : 0),
-        wrongCount: prev.wrongCount + (isCorrect ? 0 : 1),
-      };
-    });
-  }, []);
-
-  const handleNext = useCallback(() => {
-    setLessonState(prev => {
-      if (!prev) return prev;
-      const nextIndex = prev.currentIndex + 1;
-
-      // Check if lesson should end
-      if (prev.wrongCount >= prev.maxErrors || nextIndex >= prev.totalHands) {
-        const passed = prev.wrongCount < prev.maxErrors;
-        const accuracy = Math.round((prev.correctCount / prev.totalHands) * 100);
-
-        let xpEarned = 0;
-
-        // Test-out mode: bulk update all lessons in unit
-        if (testOutUnitId && passed) {
-          const unit = SKILL_TREE.find(u => u.id === testOutUnitId);
-          if (unit) {
-            const today = new Date().toISOString().slice(0, 10);
-            for (const lesson of unit.lessons) {
-              const prevCrown = progress[lesson.id]?.crown || 0;
-              if (prevCrown < 1) {
-                updateLesson(lesson.id, {
-                  crown: 1,
-                  bestAccuracy: Math.max(progress[lesson.id]?.bestAccuracy || 0, accuracy),
-                  attempts: (progress[lesson.id]?.attempts || 0) + 1,
-                  lastAttempt: today,
-                });
-              }
-            }
-            xpEarned = unit.lessons.length * 10;
-            addXP(xpEarned);
-          }
-        }
-        // Normal lesson mode
-        else if (passed && activeLessonId) {
-          const prevCrown = progress[activeLessonId]?.crown || 0;
-          let newCrown = 1;
-          if (prev.wrongCount === 0) newCrown = 3;
-          else if (prev.wrongCount <= 1) newCrown = 2;
-
-          if (newCrown > prevCrown) {
-            xpEarned = newCrown === 3 ? 30 : newCrown === 2 ? 20 : 10;
-          } else {
-            xpEarned = 5;
-          }
-
-          updateLesson(activeLessonId, {
-            crown: Math.max(prevCrown, newCrown),
-            bestAccuracy: Math.max(progress[activeLessonId]?.bestAccuracy || 0, accuracy),
-            attempts: (progress[activeLessonId]?.attempts || 0) + 1,
-            lastAttempt: new Date().toISOString().slice(0, 10),
-          });
-          addXP(xpEarned);
-        }
-
-        setLessonResult({
-          passed,
-          correct: prev.correctCount,
-          total: prev.totalHands,
-          wrong: prev.wrongCount,
-          xp: xpEarned,
-        });
-        setLearnScreen('result');
-        return prev;
-      }
-
-      return { ...prev, currentIndex: nextIndex };
-    });
-  }, [activeLessonId, testOutUnitId, progress, updateLesson, addXP]);
-
-  const abortLesson = useCallback(() => {
-    setLearnScreen('tree');
-    setActiveLessonId(null);
-    setLessonState(null);
-    setTestOutUnitId(null);
-  }, []);
-
-  const backToTree = useCallback(() => {
-    setLearnScreen('tree');
-    setActiveLessonId(null);
-    setLessonState(null);
-    setLessonResult(null);
-    setTestOutUnitId(null);
-  }, []);
-
-  // Back button handling:
-  // - Home/tree: prevent going back to auth pages (login/callback/google)
-  // - During lesson: also return to skill tree
+  // Back button handling
   useEffect(() => {
     if (!user) return;
     window.history.replaceState({ holdemApp: true }, '', '/');
 
     const handlePopState = (e: PopStateEvent) => {
-      if (learnScreen !== 'tree') {
-        backToTree();
+      if (lesson.learnScreen !== 'tree') {
+        lesson.backToTree();
       }
       if (!e.state?.holdemApp) {
         window.history.pushState({ holdemApp: true }, '', '/');
@@ -286,7 +60,7 @@ export default function Home() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [user, learnScreen, backToTree]);
+  }, [user, lesson.learnScreen, lesson.backToTree]);
 
   // Loading
   if (userLoading || progressLoading) {
@@ -297,17 +71,13 @@ export default function Home() {
     );
   }
 
-  // Get active lesson for GuideCard
-  const activeUnit = SKILL_TREE.find(u => u.id === activeUnitId);
-  const activeLesson = activeUnit?.lessons.find(l => l.id === activeLessonId);
-
   return (
     <div className="max-w-[500px] mx-auto px-4 py-4 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <h1
           className="text-lg font-bold text-gray-200 cursor-pointer hover:text-white transition"
-          onClick={() => { backToTree(); setActiveTab('learn'); }}
+          onClick={() => { lesson.backToTree(); setActiveTab('learn'); }}
         >Holdem Trainer</h1>
         <div className="flex items-center gap-2">
           <button onClick={toggleMute} className="text-lg" title={muted ? '소리 켜기' : '소리 끄기'}>
@@ -335,24 +105,24 @@ export default function Home() {
       {/* Learn Tab */}
       {activeTab === 'learn' && (
         <>
-          {learnScreen === 'tree' && (
+          {lesson.learnScreen === 'tree' && (
             <SkillTree
               progress={progress}
-              openUnitId={openUnitId}
-              onToggleUnit={(id) => setOpenUnitId(openUnitId === id ? null : id)}
-              onStartLesson={startLesson}
-              onStartTestOut={startTestOut}
-              getUnitStatus={getUnitStatus}
-              isLessonUnlocked={isLessonUnlocked}
+              openUnitId={lesson.openUnitId}
+              onToggleUnit={lesson.toggleUnit}
+              onStartLesson={lesson.startLesson}
+              onStartTestOut={lesson.startTestOut}
+              getUnitStatus={lesson.getUnitStatus}
+              isLessonUnlocked={lesson.isLessonUnlocked}
             />
           )}
 
-          {learnScreen === 'guide' && testOutUnitId && activeUnit && (
+          {lesson.learnScreen === 'guide' && lesson.testOutUnitId && lesson.activeUnit && (
             <div className="max-w-[400px] mx-auto mt-10 text-center">
               <div className="text-5xl mb-4 animate-emoji-bounce">🏆</div>
               <div className="text-2xl font-bold text-amber-400 mb-2 animate-slide-up">승단 시험</div>
               <div className="text-base font-bold text-gray-200 mb-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                {activeUnit.emoji} {activeUnit.title}
+                {lesson.activeUnit.emoji} {lesson.activeUnit.title}
               </div>
               <div className="bg-white/5 rounded-xl p-5 mb-6 text-left animate-slide-up" style={{ animationDelay: '0.2s' }}>
                 <div className="text-sm text-gray-300 space-y-2">
@@ -364,13 +134,13 @@ export default function Home() {
               </div>
               <div className="flex flex-col gap-2.5 animate-slide-up" style={{ animationDelay: '0.3s' }}>
                 <button
-                  onClick={beginQuiz}
+                  onClick={lesson.beginQuiz}
                   className="py-3.5 px-5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition"
                 >
                   시험 시작
                 </button>
                 <button
-                  onClick={abortLesson}
+                  onClick={lesson.abortLesson}
                   className="py-3.5 px-5 bg-gray-700 rounded-xl text-gray-200 text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition"
                 >
                   돌아가기
@@ -379,36 +149,36 @@ export default function Home() {
             </div>
           )}
 
-          {learnScreen === 'guide' && !testOutUnitId && activeLesson && activeUnit && (
+          {lesson.learnScreen === 'guide' && !lesson.testOutUnitId && lesson.activeLesson && lesson.activeUnit && (
             <GuideCard
-              lesson={activeLesson}
-              unitEmoji={activeUnit.emoji}
-              onStart={beginQuiz}
+              lesson={lesson.activeLesson}
+              unitEmoji={lesson.activeUnit.emoji}
+              onStart={lesson.beginQuiz}
             />
           )}
 
-          {learnScreen === 'quiz' && lessonState && (
+          {lesson.learnScreen === 'quiz' && lesson.lessonState && (
             <LessonQuiz
-              lessonState={lessonState}
-              onAnswer={handleAnswer}
-              onNext={handleNext}
-              onAbort={abortLesson}
+              lessonState={lesson.lessonState}
+              onAnswer={lesson.handleAnswer}
+              onNext={lesson.handleNext}
+              onAbort={lesson.abortLesson}
             />
           )}
 
-          {learnScreen === 'result' && lessonResult && (activeLessonId || testOutUnitId) && (
+          {lesson.learnScreen === 'result' && lesson.lessonResult && (lesson.activeLessonId || lesson.testOutUnitId) && (
             <LessonResult
-              passed={lessonResult.passed}
-              correct={lessonResult.correct}
-              total={lessonResult.total}
-              wrong={lessonResult.wrong}
-              xp={lessonResult.xp}
-              lessonId={activeLessonId || ''}
-              unitId={activeUnitId}
-              onStartLesson={startLesson}
-              onBackToTree={backToTree}
-              isLessonUnlocked={isLessonUnlocked}
-              isTestOut={!!testOutUnitId}
+              passed={lesson.lessonResult.passed}
+              correct={lesson.lessonResult.correct}
+              total={lesson.lessonResult.total}
+              wrong={lesson.lessonResult.wrong}
+              xp={lesson.lessonResult.xp}
+              lessonId={lesson.activeLessonId || ''}
+              unitId={lesson.activeUnitId}
+              onStartLesson={lesson.startLesson}
+              onBackToTree={lesson.backToTree}
+              isLessonUnlocked={lesson.isLessonUnlocked}
+              isTestOut={!!lesson.testOutUnitId}
             />
           )}
         </>
@@ -454,54 +224,6 @@ export default function Home() {
 
       {/* Glossary Modal */}
       {showGlossary && <GlossaryModal onClose={() => setShowGlossary(false)} />}
-    </div>
-  );
-}
-
-// Level Up Overlay Component
-function LevelUpOverlay({ newLevel, onDismiss, playLevelUp }: {
-  newLevel: { level: number; title: string };
-  onDismiss: () => void;
-  playLevelUp: () => void;
-}) {
-  const firedRef = useRef(false);
-
-  useEffect(() => {
-    if (firedRef.current) return;
-    firedRef.current = true;
-
-    playLevelUp();
-    setTimeout(() => {
-      confetti({
-        particleCount: 100,
-        spread: 90,
-        origin: { y: 0.5 },
-        colors: ['#ffd700', '#ffaa00', '#fff', '#6366f1'],
-        shapes: ['star', 'circle'],
-      });
-    }, 300);
-
-    const timer = setTimeout(onDismiss, 3000);
-    return () => clearTimeout(timer);
-  }, [onDismiss, playLevelUp]);
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      onClick={onDismiss}
-    >
-      <div className="text-center" onClick={e => e.stopPropagation()}>
-        <div className="text-6xl mb-4 animate-emoji-bounce">🏆</div>
-        <div className="text-3xl font-black text-amber-400 animate-level-up-text mb-2">
-          LEVEL UP!
-        </div>
-        <div className="text-xl font-bold text-white animate-slide-up" style={{ animationDelay: '0.3s' }}>
-          Lv.{newLevel.level} {newLevel.title}
-        </div>
-        <div className="text-sm text-gray-400 mt-4 animate-slide-up" style={{ animationDelay: '0.6s' }}>
-          탭하여 계속
-        </div>
-      </div>
     </div>
   );
 }

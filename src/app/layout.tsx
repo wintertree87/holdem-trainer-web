@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -22,7 +23,7 @@ export default function RootLayout({
           background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
         }}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
