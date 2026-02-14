@@ -20,7 +20,7 @@ function actionLabel(action: GameAction, pot: number): string {
       if (action.amount <= pot * 2 / 3 + 0.5) return '2/3';
       return '팟';
     case 'raise':
-      return `${action.amount}bb`;
+      return `$${action.amount}`;
   }
 }
 

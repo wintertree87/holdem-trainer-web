@@ -30,7 +30,7 @@ export default function ShowdownResult({ result, botHand, heroHand, onNext }: Pr
         <div className="text-sm text-gray-400 mb-4">
           {result.wonByFold
             ? '상대 폴드'
-            : `팟 ${result.potWon.toFixed(1)}bb`
+            : `팟 $${result.potWon.toFixed(0)}`
           }
         </div>
 

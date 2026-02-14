@@ -37,7 +37,7 @@ export default function MatchSummary({ result, xpEarned, onClose }: Props) {
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-400">최종 스택</span>
           <span className={`text-lg font-bold ${result.bbWon >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {result.bbWon >= 0 ? '+' : ''}{result.bbWon.toFixed(1)}bb
+            {result.bbWon >= 0 ? '+' : '-'}${Math.abs(result.bbWon).toFixed(0)}
           </span>
         </div>
 

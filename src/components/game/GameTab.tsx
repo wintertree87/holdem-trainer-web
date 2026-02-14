@@ -61,7 +61,7 @@ export default function GameTab({ getUnitStatus, onStartMatch, gameStats }: Prop
                       <span className="text-red-400">{stats!.losses}패</span>
                       {stats!.ties > 0 && <span className="text-gray-400">{stats!.ties}무</span>}
                       <span className={stats!.totalBbWon >= 0 ? 'text-green-400' : 'text-red-400'}>
-                        {stats!.totalBbWon >= 0 ? '+' : ''}{stats!.totalBbWon.toFixed(1)}bb
+                        {stats!.totalBbWon >= 0 ? '+' : '-'}${Math.abs(stats!.totalBbWon).toFixed(0)}
                       </span>
                     </>
                   ) : (
@@ -81,7 +81,7 @@ export default function GameTab({ getUnitStatus, onStartMatch, gameStats }: Prop
       })}
 
       <div className="text-center text-xs text-gray-600 mt-4 pt-3 border-t border-white/5">
-        매치당 10핸드 · 100bb 딥스택 · 승리 시 XP 보너스
+        매치당 10핸드 · $100 딥스택 · 승리 시 XP 보너스
       </div>
     </div>
   );
