@@ -17,3 +17,8 @@ export const POSITION_INFO: Record<string, string> = {
 
 export type Card = { rank: string; suit: string };
 export type HandNotation = string;
+
+export const RANK_VALUE: Record<string, number> = {
+  'A': 14, 'K': 13, 'Q': 12, 'J': 11, 'T': 10,
+  '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2,
+};

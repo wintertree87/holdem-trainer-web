@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { useProgress } from '@/hooks/useProgress';
 import { useXP } from '@/hooks/useXP';
@@ -9,9 +9,11 @@ import { useDailyGoal } from '@/hooks/useDailyGoal';
 import { useWrongNotes } from '@/hooks/useWrongNotes';
 import { useSound } from '@/hooks/useSound';
 import { useLessonFlow } from '@/hooks/useLessonFlow';
-import { useState } from 'react';
+import { useGameSession, type MatchResult } from '@/hooks/useGameSession';
+import { type GameTier } from '@/data/game-config';
+import { createClient } from '@/lib/supabase-browser';
 
-import TabBar from '@/components/TabBar';
+import TabBar, { type Tab } from '@/components/TabBar';
 import XPBar from '@/components/XPBar';
 import DailyGoal from '@/components/DailyGoal';
 import SkillTree from '@/components/learn/SkillTree';
@@ -23,8 +25,17 @@ import GuideOverlay from '@/components/GuideOverlay';
 import WrongNotesModal from '@/components/modals/WrongNotesModal';
 import GlossaryModal from '@/components/modals/GlossaryModal';
 import LevelUpOverlay from '@/components/LevelUpOverlay';
+import GameTab from '@/components/game/GameTab';
+import GameTable from '@/components/game/GameTable';
+import MatchSummary from '@/components/game/MatchSummary';
 
-type Tab = 'learn' | 'practice';
+type GameStats = {
+  tier: string;
+  wins: number;
+  losses: number;
+  ties: number;
+  totalBbWon: number;
+};
 
 export default function Home() {
   const { user, loading: userLoading, signOut } = useUser();
@@ -36,14 +47,80 @@ export default function Home() {
   const { muted, toggleMute, playLevelUp } = useSound();
 
   const lesson = useLessonFlow({ progress, updateLesson, addXP });
+  const game = useGameSession();
 
   // Tab state
   const [activeTab, setActiveTab] = useState<Tab>('learn');
+
+  // Game stats from Supabase
+  const [gameStats, setGameStats] = useState<GameStats[]>([]);
+  const [matchXpEarned, setMatchXpEarned] = useState(0);
 
   // Modals
   const [showGuide, setShowGuide] = useState(false);
   const [showWrongNotes, setShowWrongNotes] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
+
+  // Load game stats
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase.from('game_stats')
+      .select('tier, result, hero_final_stack')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        if (!data) return;
+        const statsMap: Record<string, GameStats> = {};
+        for (const row of data) {
+          if (!statsMap[row.tier]) {
+            statsMap[row.tier] = { tier: row.tier, wins: 0, losses: 0, ties: 0, totalBbWon: 0 };
+          }
+          const s = statsMap[row.tier];
+          if (row.result === 'hero') s.wins++;
+          else if (row.result === 'bot') s.losses++;
+          else s.ties++;
+          s.totalBbWon += row.hero_final_stack - 100; // 100 = starting stack
+        }
+        setGameStats(Object.values(statsMap));
+      });
+  }, [user, game.matchResult]);
+
+  // Save match result to Supabase
+  const saveMatchResult = useCallback(async (result: MatchResult, xp: number) => {
+    if (!user) return;
+    const supabase = createClient();
+    await supabase.from('game_stats').insert({
+      user_id: user.id,
+      tier: result.tier.id,
+      result: result.winner,
+      hero_final_stack: result.heroFinalStack,
+      bot_final_stack: result.botFinalStack,
+      hands_played: result.handsPlayed,
+      xp_earned: xp,
+    });
+  }, [user]);
+
+  // Handle match completion
+  useEffect(() => {
+    if (!game.matchResult || matchXpEarned > 0) return;
+    const result = game.matchResult;
+    const xp = result.tier.xpBase + (result.winner === 'hero' ? result.tier.xpWin : 0);
+    setMatchXpEarned(xp);
+    addXP(xp);
+    saveMatchResult(result, xp);
+  }, [game.matchResult, matchXpEarned, addXP, saveMatchResult]);
+
+  // Start match handler
+  const handleStartMatch = useCallback((tier: GameTier) => {
+    setMatchXpEarned(0);
+    game.startMatch(tier);
+  }, [game]);
+
+  // End match handler
+  const handleEndMatch = useCallback(() => {
+    game.endMatch();
+    setMatchXpEarned(0);
+  }, [game]);
 
   // Back button handling
   useEffect(() => {
@@ -51,7 +128,12 @@ export default function Home() {
     window.history.replaceState({ holdemApp: true }, '', '/');
 
     const handlePopState = (e: PopStateEvent) => {
-      if (lesson.learnScreen !== 'tree') {
+      if (game.match && !game.matchResult) {
+        // In game — quit match
+        game.endMatch();
+      } else if (game.matchResult) {
+        handleEndMatch();
+      } else if (lesson.learnScreen !== 'tree') {
         lesson.backToTree();
       }
       if (!e.state?.holdemApp) {
@@ -60,13 +142,42 @@ export default function Home() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [user, lesson.learnScreen, lesson.backToTree]);
+  }, [user, lesson.learnScreen, lesson.backToTree, game.match, game.matchResult, game.endMatch, handleEndMatch]);
 
   // Loading
   if (userLoading || progressLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-500 text-sm">로딩 중...</div>
+      </div>
+    );
+  }
+
+  // Game in progress — full-screen game UI
+  if (game.match && !game.matchResult) {
+    return (
+      <div className="max-w-[500px] mx-auto px-4 py-4 min-h-screen">
+        <GameTable
+          match={game.match}
+          showResult={game.showResult}
+          onHeroAction={game.handleHeroAction}
+          onShowResult={game.handleShowResult}
+          onNextHand={game.nextHand}
+          onQuit={game.endMatch}
+        />
+      </div>
+    );
+  }
+
+  // Match complete — show summary
+  if (game.matchResult) {
+    return (
+      <div className="max-w-[500px] mx-auto px-4 py-4 min-h-screen">
+        <MatchSummary
+          result={game.matchResult}
+          xpEarned={matchXpEarned}
+          onClose={handleEndMatch}
+        />
       </div>
     );
   }
@@ -194,6 +305,15 @@ export default function Home() {
           total={total}
           accuracy={accuracy}
           onOpenWrongNotes={() => setShowWrongNotes(true)}
+        />
+      )}
+
+      {/* Game Tab */}
+      {activeTab === 'game' && (
+        <GameTab
+          getUnitStatus={lesson.getUnitStatus}
+          onStartMatch={handleStartMatch}
+          gameStats={gameStats}
         />
       )}
 

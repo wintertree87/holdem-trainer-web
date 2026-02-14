@@ -1,41 +1,45 @@
 'use client';
 
+export type Tab = 'learn' | 'practice' | 'game';
+
 type Props = {
-  activeTab: 'learn' | 'practice';
-  onSwitch: (tab: 'learn' | 'practice') => void;
+  activeTab: Tab;
+  onSwitch: (tab: Tab) => void;
 };
 
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'learn', label: '학습' },
+  { id: 'practice', label: '자유연습' },
+  { id: 'game', label: '게임' },
+];
+
 export default function TabBar({ activeTab, onSwitch }: Props) {
+  const activeIndex = TABS.findIndex(t => t.id === activeTab);
+  const tabWidth = 100 / TABS.length;
+
   return (
     <div className="relative flex border-b border-white/10 mb-4">
       {/* Sliding indicator */}
       <div
         className="absolute bottom-0 h-[2px] bg-indigo-400 transition-all duration-300 ease-out"
         style={{
-          width: '50%',
-          transform: activeTab === 'learn' ? 'translateX(0%)' : 'translateX(100%)',
+          width: `${tabWidth}%`,
+          transform: `translateX(${activeIndex * 100}%)`,
         }}
       />
-      <button
-        onClick={() => onSwitch('learn')}
-        className={`flex-1 py-3 text-center text-sm font-bold transition-all duration-300 ${
-          activeTab === 'learn'
-            ? 'text-indigo-400'
-            : 'text-gray-500 hover:text-gray-300'
-        }`}
-      >
-        학습
-      </button>
-      <button
-        onClick={() => onSwitch('practice')}
-        className={`flex-1 py-3 text-center text-sm font-bold transition-all duration-300 ${
-          activeTab === 'practice'
-            ? 'text-indigo-400'
-            : 'text-gray-500 hover:text-gray-300'
-        }`}
-      >
-        자유연습
-      </button>
+      {TABS.map(tab => (
+        <button
+          key={tab.id}
+          onClick={() => onSwitch(tab.id)}
+          className={`flex-1 py-3 text-center text-sm font-bold transition-all duration-300 ${
+            activeTab === tab.id
+              ? 'text-indigo-400'
+              : 'text-gray-500 hover:text-gray-300'
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
     </div>
   );
 }
