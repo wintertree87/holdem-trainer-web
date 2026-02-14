@@ -61,19 +61,6 @@ export default function Home() {
   const [showWrongNotes, setShowWrongNotes] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
 
-  // Prevent back-button from navigating to auth pages (login/callback)
-  useEffect(() => {
-    if (!user) return;
-    window.history.replaceState({ holdemHome: true }, '', '/');
-    const handlePopState = (e: PopStateEvent) => {
-      if (!e.state?.holdemHome) {
-        window.history.pushState({ holdemHome: true }, '', '/');
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [user]);
-
   // Unit/lesson unlock logic
   const getUnitStatus = useCallback((unitId: number): 'locked' | 'current' | 'completed' => {
     if (unitId === 1) {
@@ -264,6 +251,22 @@ export default function Home() {
     setLessonResult(null);
     setTestOutUnitId(null);
   }, []);
+
+  // Back button handling:
+  // - On home/tree screen: let the browser behave normally (user can leave)
+  // - During lesson (guide/quiz/result): back button returns to skill tree
+  useEffect(() => {
+    if (!user) return;
+    if (learnScreen === 'tree') return;
+
+    window.history.pushState({ holdemLesson: true }, '', '/');
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state?.holdemLesson) return;
+      backToTree();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [user, learnScreen, backToTree]);
 
   // Loading
   if (userLoading || progressLoading) {
