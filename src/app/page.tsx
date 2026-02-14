@@ -63,18 +63,29 @@ export default function Home() {
 
   // Unit/lesson unlock logic
   const getUnitStatus = useCallback((unitId: number): 'locked' | 'current' | 'completed' => {
-    if (unitId === 1) {
-      const unit = SKILL_TREE.find(u => u.id === 1)!;
+    const unit = SKILL_TREE.find(u => u.id === unitId)!;
+    if (!unit) return 'locked';
+
+    // Unit 0 (tutorial): always open. Auto-complete if existing user has Unit 1+ progress.
+    if (unitId === 0) {
       const allCompleted = unit.lessons.length > 0 && unit.lessons.every(l => (progress[l.id]?.crown || 0) >= 1);
-      return allCompleted ? 'completed' : 'current';
+      if (allCompleted) return 'completed';
+      // Existing user: if any Unit 1+ lesson has progress, treat Unit 0 as completed
+      const hasLaterProgress = SKILL_TREE.some(u => u.id > 0 && u.lessons.some(l => (progress[l.id]?.crown || 0) >= 1));
+      if (hasLaterProgress) return 'completed';
+      return 'current';
     }
-    const prevUnit = SKILL_TREE.find(u => u.id === unitId - 1);
+
+    // All other units: check previous unit
+    const unitIndex = SKILL_TREE.findIndex(u => u.id === unitId);
+    const prevUnit = unitIndex > 0 ? SKILL_TREE[unitIndex - 1] : null;
     if (!prevUnit) return 'locked';
     if (prevUnit.lessons.length === 0) return 'locked';
-    const prevCompleted = prevUnit.lessons.every(l => (progress[l.id]?.crown || 0) >= 1);
-    if (!prevCompleted) return 'locked';
 
-    const unit = SKILL_TREE.find(u => u.id === unitId)!;
+    // Check if previous unit is completed (or auto-completed for Unit 0)
+    const prevStatus = getUnitStatus(prevUnit.id);
+    if (prevStatus !== 'completed') return 'locked';
+
     if (unit.lessons.length === 0) return 'current';
     const allCompleted = unit.lessons.every(l => (progress[l.id]?.crown || 0) >= 1);
     return allCompleted ? 'completed' : 'current';
@@ -136,12 +147,18 @@ export default function Home() {
     if (!lesson) return;
 
     let scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
+    // Warmup: if a dynamic lesson has static scenarios, prepend them
+    const warmup = (lesson.scenarios || []).map(s => ({ ...s, quizType: 'identify' as const }));
+
     if (lesson.quizType === 'rfi_dynamic' && lesson.positions) {
-      scenarios = generateRfiScenarios(lesson.positions, lesson.handCount);
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateRfiScenarios(lesson.positions, dynamicCount)];
     } else if (lesson.quizType === 'facing_dynamic' && lesson.positions) {
-      scenarios = generateFacingScenarios(lesson.positions, lesson.handCount);
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateFacingScenarios(lesson.positions, dynamicCount)];
     } else if (lesson.quizType === 'vs3bet_dynamic' && lesson.positions) {
-      scenarios = generateVs3betScenarios(lesson.positions, lesson.handCount);
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateVs3betScenarios(lesson.positions, dynamicCount)];
     } else {
       scenarios = (lesson.scenarios || []).map(s => ({ ...s, quizType: lesson.quizType }));
     }

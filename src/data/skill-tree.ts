@@ -42,12 +42,51 @@ export type Unit = {
 
 export const SKILL_TREE: Unit[] = [
   {
+    id: 0, title: '홀덤 첫걸음', subtitle: '홀덤이 처음이라면 여기서 시작', emoji: '👋', group: '튜토리얼',
+    lessons: [
+      {
+        id: '0-1', title: '홀덤 한 판의 흐름', subtitle: '게임의 기본 규칙',
+        quizType: 'identify', handCount: 4, maxErrors: 4,
+        guideTip: '홀덤은 간단해요.\n카드 2장을 받고, 테이블에 공유 카드 5장이 깔리고,\n가장 좋은 조합 5장으로 승부하는 게임이에요.\n지금부터 하나씩 알아볼게요!',
+        scenarios: [
+          { question: '홀덤에서 나한테 나눠지는 카드는 몇 장?', options: ['2장', '3장', '5장'], answer: '2장', explanation: '맞아요! 이 2장을 \'핸드\'라고 불러요. 이 2장이 내 무기예요.' },
+          { question: '테이블 가운데 깔리는 공유 카드는 총 몇 장?', options: ['3장', '4장', '5장'], answer: '5장', explanation: '5장이 차례로 깔려요. 처음 3장(플랍), 1장(턴), 1장(리버) 순서예요.' },
+          { question: '최종 승부는 몇 장으로 만드나요?', options: ['내 2장만', '5장 조합', '7장 전부'], answer: '5장 조합', explanation: '내 2장 + 공유 5장 중에서 가장 좋은 5장 조합이 내 패예요.' },
+          { question: '상대보다 좋은 패를 가지면?', options: ['이긴다', '비긴다', '다시 한다'], answer: '이긴다', explanation: '테이블에 쌓인 칩(돈)을 전부 가져가요! 이게 홀덤이에요.' }
+        ]
+      },
+      {
+        id: '0-2', title: '패의 서열', subtitle: '어떤 패가 이기나요?',
+        quizType: 'identify', handCount: 5, maxErrors: 4,
+        guideTip: '어떤 패가 강한지 알아야 게임을 할 수 있어요.\n원페어 < 투페어 < 트리플 < 스트레이트 < 플러시 순서예요.\n만들기 어려운 패일수록 강해요!',
+        scenarios: [
+          { question: '같은 숫자 2장이 있으면?', options: ['원페어', '투페어', '트리플'], answer: '원페어', explanation: '원페어예요! 예: K♠ K♥. 가장 흔하게 만들어지는 패죠.' },
+          { question: '원페어와 투페어 중 뭐가 더 강하나요?', options: ['원페어', '투페어'], answer: '투페어', explanation: '투페어가 더 강해요. 만들기가 더 어려우니까요.' },
+          { question: '숫자가 연속 5개면? (예: 5-6-7-8-9)', options: ['스트레이트', '플러시'], answer: '스트레이트', explanation: '스트레이트! 숫자 5개가 계단처럼 이어지는 거예요.' },
+          { question: '같은 무늬 5장이면?', options: ['스트레이트', '플러시'], answer: '플러시', explanation: '플러시! 하트 5장, 스페이드 5장처럼 무늬가 같으면 돼요.' },
+          { question: '스트레이트와 플러시 중 뭐가 더 강하나요?', options: ['스트레이트', '플러시'], answer: '플러시', explanation: '플러시가 더 강해요. 같은 무늬 5장이 더 만들기 어렵거든요.' }
+        ]
+      },
+      {
+        id: '0-3', title: '베팅의 기본', subtitle: '레이즈, 콜, 폴드, 체크',
+        quizType: 'identify', handCount: 4, maxErrors: 4,
+        guideTip: '매 라운드마다 선택이 있어요.\n패가 좋으면 돈을 더 넣고(레이즈),\n남이 건 만큼 따라가거나(콜),\n안 되겠으면 포기해요(폴드).\n아무도 안 걸었으면 그냥 넘길 수도 있어요(체크).',
+        scenarios: [
+          { show: 'A♠ A♥', question: '이 패는 에이스 한 쌍! 최강 패예요. 가장 좋은 선택은?', options: ['돈을 더 넣기 (레이즈)', '포기하기 (폴드)'], answer: '돈을 더 넣기 (레이즈)', explanation: 'AA는 최강 패! 당연히 돈을 더 넣어야죠. 이걸 \'레이즈\'라고 해요.' },
+          { show: '7♠ 2♦', question: '이 패는 7과 2... 가장 약한 조합이에요. 보통 어떻게 하나요?', options: ['돈을 더 넣기 (레이즈)', '포기하기 (폴드)'], answer: '포기하기 (폴드)', explanation: '72는 가장 약한 패예요. 이럴 때 포기하는 걸 \'폴드\'라고 해요. 돈 아끼는 것도 실력!' },
+          { question: '상대가 베팅했는데 내 패가 괜찮을 때, 같은 금액을 내는 건?', options: ['콜', '폴드', '체크'], answer: '콜', explanation: '같은 금액을 내는 걸 \'콜\'이라고 해요. 게임을 계속할 수 있어요.' },
+          { question: '누구도 베팅 안 했을 때 나도 안 내고 넘기는 건?', options: ['체크', '콜', '폴드'], answer: '체크', explanation: '아무도 안 걸었으면 나도 그냥 넘길 수 있어요. 이게 \'체크\'예요. 돈 안 내고 다음 카드를 볼 수 있죠.' }
+        ]
+      }
+    ]
+  },
+  {
     id: 1, title: '핸드의 세계', subtitle: '카드 표기법과 핸드 강도', emoji: '🃏', group: '기초',
     lessons: [
       {
         id: '1-1', title: '카드 읽기', subtitle: '홀덤의 알파벳을 배우자',
         quizType: 'identify', handCount: 4, maxErrors: 2,
-        guideTip: '홀덤에서 카드를 표기하는 방법이 있어요.\nA=에이스, K=킹, Q=퀸, J=잭, T=10.\ns=같은 무늬(수티드), o=다른 무늬(오프수트).\nAA, KK처럼 같은 숫자 두 장은 포켓 페어라고 해요.',
+        guideTip: '홀덤에서는 카드를 짧게 쓰는 방법이 있어요.\nA=에이스, K=킹, Q=퀸, J=잭, T=10.\ns=같은 무늬, o=다른 무늬.\n예: AKs = 에이스-킹 같은 무늬\nAA, KK처럼 같은 숫자 두 장은 \'페어\'라고 해요.',
         scenarios: [
           { show: 'A♠ K♠', question: '이 핸드의 표기법은?', options: ['AKs','AKo','AK','KAs'], answer: 'AKs', explanation: '같은 스페이드(♠)이므로 수티드. AKs로 표기.' },
           { show: 'Q♥ J♦', question: '이 핸드의 표기법은?', options: ['QJs','QJo','JQo','QJ'], answer: 'QJo', explanation: '하트(♥)와 다이아(♦)로 다른 무늬. 오프수트 QJo.' },
@@ -57,20 +96,24 @@ export const SKILL_TREE: Unit[] = [
       },
       {
         id: '1-2', title: '핸드 계급', subtitle: '어떤 패가 강할까?',
-        quizType: 'identify', handCount: 5, maxErrors: 2,
-        guideTip: '모든 핸드는 평등하지 않아요.\nAA > KK > QQ > ... > 32o 순서예요.\n높은 페어 > 높은 수티드 > 높은 오프수트 > 낮은 페어 순이에요.',
+        quizType: 'identify', handCount: 7, maxErrors: 3,
+        guideTip: '모든 패는 평등하지 않아요.\nAA(에이스 페어)가 가장 강하고, 72(7-2 다른무늬)가 가장 약해요.\n기본 순서: 높은 페어 > 높은 카드 같은무늬 > 높은 카드 다른무늬 > 낮은 페어',
         scenarios: [
-          { question: '다음 중 가장 강한 시작 핸드는?', options: ['AA','AKs','KK','QQ'], answer: 'AA', explanation: 'AA는 프리플랍 최강 핸드. 모든 핸드를 상대로 유리.' },
-          { question: 'AKs와 QQ 중 프리플랍에서 더 강한 것은?', options: ['QQ','AKs','비슷하다'], answer: 'QQ', explanation: 'QQ는 이미 페어. AKs는 맞아야 페어가 되므로 QQ가 약간 유리.' },
-          { question: '다음 중 가장 약한 핸드는?', options: ['72o','32s','J3o','95o'], answer: '72o', explanation: '72o는 홀덤에서 가장 약한 핸드로 유명. 연결도 없고 높은 카드도 없다.' },
-          { question: 'AKs와 AKo의 차이는?', options: ['AKs가 더 강하다','AKo가 더 강하다','완전히 같다'], answer: 'AKs가 더 강하다', explanation: '수티드는 플러시 가능성이 있어서 약 3% 더 자주 이긴다.' },
-          { question: '99와 AQo 중 올인하면 누가 유리?', options: ['99가 약간 유리','AQo가 약간 유리','완전 동등'], answer: '99가 약간 유리', explanation: '포켓 페어는 이미 페어가 완성된 상태. 오버카드 둘과의 매치업에서 약 55:45로 유리.' }
+          // OX 퀵 퀴즈 (워밍업)
+          { question: 'AA(에이스 페어)는 홀덤에서 가장 강한 시작 패다', options: ['O', 'X'], answer: 'O', explanation: '맞아요! AA는 모든 패를 상대로 유리한 최강 패예요.' },
+          { question: '같은 무늬(예: AKs)가 다른 무늬(AKo)보다 항상 강하다', options: ['O', 'X'], answer: 'O', explanation: '맞아요! 같은 무늬는 플러시 가능성이 있어서 약 3% 더 유리해요.' },
+          // 비교 선택형
+          { question: 'QQ와 AKs 중 올인하면 누가 유리할까?', options: ['QQ가 약간 유리', 'AKs가 약간 유리', '완전 동등'], answer: 'QQ가 약간 유리', explanation: 'QQ는 이미 페어가 완성된 상태! AKs는 A나 K를 맞춰야 해서 QQ가 약 55:45로 유리해요.' },
+          { question: '다음 중 가장 강한 시작 패는?', options: ['AA','AKs','KK','QQ'], answer: 'AA', explanation: 'AA는 프리플랍 최강! 어떤 패를 만나도 제일 유리해요.' },
+          { question: '다음 중 가장 약한 패는?', options: ['72o','32s','J3o','95o'], answer: '72o', explanation: '72o는 홀덤에서 가장 약한 패로 유명해요. 숫자가 연결도 안 되고 높은 카드도 없죠.' },
+          { question: 'AKs와 AKo의 차이는?', options: ['AKs가 더 강하다','AKo가 더 강하다','완전히 같다'], answer: 'AKs가 더 강하다', explanation: '같은 무늬(s)는 플러시 가능성이 있어서 약 3% 더 자주 이겨요.' },
+          { question: '99와 AQo 중 올인하면 누가 유리?', options: ['99가 약간 유리','AQo가 약간 유리','완전 동등'], answer: '99가 약간 유리', explanation: '페어는 이미 완성된 패! 높은 카드 2장과의 대결에서 약 55:45로 유리해요.' }
         ]
       },
       {
         id: '1-3', title: '핸드 카테고리', subtitle: '핸드를 그룹으로 나누자',
         quizType: 'identify', handCount: 5, maxErrors: 2,
-        guideTip: '핸드를 카테고리로 나누면 판단이 빨라져요.\n프리미엄(AA-JJ, AKs) / 브로드웨이(AQ, KQ 등 T이상 조합) /\n포켓페어(TT-22) / 수티드 커넥터(98s, 87s) / 수티드 에이스(A5s-A2s)',
+        guideTip: '패를 종류별로 나누면 빠르게 판단할 수 있어요.\n최강(AA~JJ, AKs) / 높은카드(AQ, KQ 등) /\n페어(TT~22) / 연속+같은무늬(98s, 87s) / 에이스+같은무늬(A5s~A2s)',
         scenarios: [
           { show: 'AKs', question: '이 핸드의 카테고리는?', options: ['프리미엄','브로드웨이','수티드 커넥터'], answer: '프리미엄', explanation: 'AKs는 상위 5개 핸드에 포함. 프리미엄 핸드.' },
           { show: 'KJo', question: '이 핸드의 카테고리는?', options: ['프리미엄','브로드웨이','수티드 에이스'], answer: '브로드웨이', explanation: 'K과 J 모두 T 이상. 브로드웨이 핸드.' },
@@ -81,13 +124,17 @@ export const SKILL_TREE: Unit[] = [
       },
       {
         id: '1-4', title: '수티드의 힘', subtitle: '같은 무늬가 왜 중요할까?',
-        quizType: 'identify', handCount: 4, maxErrors: 2,
-        guideTip: '같은 무늬(수티드)는 다른 무늬(오프수트)보다 약 3-4% 더 이길 확률이 높아요.\n플러시를 만들 수 있는 가능성이 이 차이를 만들어요.\n이 작은 차이가 "플레이 가능"과 "폴드"의 경계를 가릅니다.',
+        quizType: 'identify', handCount: 5, maxErrors: 2,
+        guideTip: '같은 무늬 카드는 다른 무늬보다 약 3~4% 더 이길 확률이 높아요.\n왜? 같은 무늬 5장이 모이면 \'플러시\'라는 강한 패가 되거든요.\n이 작은 차이가 "베팅해도 되는 패"와 "접어야 하는 패"를 갈라요!',
         scenarios: [
-          { question: 'KTs는 플레이하지만 KTo는 접는 포지션이 있다. 왜?', options: ['수티드는 플러시 가능성이 있어서','수티드가 멋있어서','차이 없다'], answer: '수티드는 플러시 가능성이 있어서', explanation: '수티드의 플러시 가능성이 EV(기대값)를 높여 경계선 핸드의 플레이 여부를 바꾼다.' },
-          { question: 'J9s와 QTo 중 더 플레이어빌리티가 좋은 핸드는?', options: ['J9s','QTo','비슷하다'], answer: 'J9s', explanation: 'J9s는 수티드+커넥터로 스트레이트와 플러시 모두 가능. QTo는 한쪽(스트레이트)만.' },
-          { question: '수티드 핸드의 가장 큰 장점은?', options: ['플러시 가능성','상대를 속일 수 있어서','항상 이긴다'], answer: '플러시 가능성', explanation: '수티드는 보드에 같은 무늬가 3장 나오면 플러시를 만들 수 있어 기대값이 높다.' },
-          { question: 'A2s가 K9o보다 많은 포지션에서 플레이 가능한 이유는?', options: ['에이스 블로커 + 넛 플러시 가능','2가 강해서','답이 없다'], answer: '에이스 블로커 + 넛 플러시 가능', explanation: 'A2s는 에이스 블로커(상대 AA 확률 감소) + 넛 플러시 가능성이라는 두 가지 가치가 있다.' }
+          // OX 퀴즈 (워밍업)
+          { question: '같은 무늬(수티드) 카드가 다른 무늬보다 유리한 이유는 플러시 때문이다', options: ['O', 'X'], answer: 'O', explanation: '맞아요! 같은 무늬 5장이 모이면 플러시라는 강한 패가 되거든요. 이 가능성이 큰 차이를 만들어요.' },
+          // 비교 선택형
+          { question: 'J9s와 QTo, 어떤 패가 더 많은 가능성이 있을까요?', options: ['J9s (같은 무늬+연속)', 'QTo (높은 카드+다른 무늬)'], answer: 'J9s (같은 무늬+연속)', explanation: 'J9s는 같은 무늬(플러시 가능) + 연속 숫자(스트레이트 가능)! 두 가지 길이 열려 있어요. QTo는 스트레이트만 가능해요.' },
+          // 상황 판단형
+          { question: 'KTs는 어떤 자리에서 플레이하지만 KTo는 접어야 하는 자리가 있어요. 왜 그럴까요?', options: ['같은 무늬라 플러시 가능성이 추가돼서', '같은 무늬가 멋있어서', '차이 없다'], answer: '같은 무늬라 플러시 가능성이 추가돼서', explanation: '같은 무늬의 플러시 가능성이 애매한 패를 "플레이할 만한 패"로 바꿔줘요. 작은 차이가 큰 결과를 만들어요!' },
+          { question: '같은 무늬 패의 가장 큰 장점은?', options: ['플러시 가능성', '상대를 속일 수 있어서', '항상 이긴다'], answer: '플러시 가능성', explanation: '테이블에 같은 무늬가 3장 나오면 플러시를 만들 수 있어요. 이 가능성이 패의 가치를 높여줘요.' },
+          { question: 'A2s가 K9o보다 더 많은 자리에서 플레이 가능한 이유는?', options: ['에이스 + 가장 강한 플러시 가능', '2가 특별해서', '그냥 운'], answer: '에이스 + 가장 강한 플러시 가능', explanation: 'A2s는 에이스가 있고 + 가장 강한 플러시(넛 플러시)를 만들 수 있어요. 이 두 가지가 작은 숫자를 보완해줘요!' }
         ]
       }
     ]
@@ -98,7 +145,7 @@ export const SKILL_TREE: Unit[] = [
       {
         id: '2-1', title: '포지션 이름', subtitle: '9개의 자리를 외우자',
         quizType: 'identify', handCount: 4, maxErrors: 2,
-        guideTip: '9인 테이블은 UTG → UTG+1 → UTG+2 → LJ → HJ → CO → BTN → SB → BB 순이에요.\n먼저 행동할수록 불리하고, 나중에 행동할수록 유리해요.',
+        guideTip: '테이블에는 9개의 자리가 있어요.\nUTG → UTG+1 → UTG+2 → LJ → HJ → CO → BTN → SB → BB\n먼저 행동할수록 불리하고, 나중에 행동할수록 유리해요.\nBTN(버튼)이 가장 좋은 자리예요!',
         scenarios: [
           { question: '가장 먼저 행동하는 포지션은?', options: ['UTG','SB','BB','BTN'], answer: 'UTG', explanation: 'Under The Gun. 프리플랍에서 가장 먼저 행동한다.' },
           { question: '포스트플랍에서 항상 마지막에 행동하는 포지션은?', options: ['BTN','BB','CO','SB'], answer: 'BTN', explanation: '버튼은 딜러 위치로, 포스트플랍에서 항상 마지막에 행동. 정보 우위.' },
@@ -107,20 +154,25 @@ export const SKILL_TREE: Unit[] = [
         ]
       },
       {
-        id: '2-2', title: '포지션과 레인지', subtitle: '자리에 따라 핸드 수가 달라진다',
-        quizType: 'identify', handCount: 4, maxErrors: 2,
-        guideTip: '앞자리일수록 적은 핸드를, 뒷자리일수록 많은 핸드를 플레이해요.\nUTG는 약 10%, BTN은 약 51%.\n이유는 간단해요: 뒤에 남은 사람 수가 다르니까.',
+        id: '2-2', title: '포지션과 레인지', subtitle: '자리에 따라 플레이 범위가 달라진다',
+        quizType: 'identify', handCount: 6, maxErrors: 3,
+        guideTip: '앞자리에선 좋은 패만, 뒷자리에선 더 많은 패로 플레이해요.\nUTG(앞자리)는 상위 10%만, BTN(버튼)은 51%나 플레이!\n이유는 간단해요: 뒤에 남은 사람 수가 다르니까.',
         scenarios: [
-          { question: 'UTG의 오픈 레인지는 대략 몇 %?', options: ['10%','20%','30%','50%'], answer: '10%', explanation: '뒤에 8명이 남아있어서 매우 타이트하게. 상위 10%만 오픈.' },
-          { question: 'BTN의 오픈 레인지는 대략 몇 %?', options: ['51%','30%','20%','10%'], answer: '51%', explanation: '뒤에 블라인드 2명만 남아서 거의 절반의 핸드를 오픈할 수 있다.' },
-          { question: 'CO의 오픈 레인지는 대략 몇 %?', options: ['30%','10%','51%','22%'], answer: '30%', explanation: 'BTN 앞 자리. 레이트 포지션이라 꽤 넓게 플레이 가능.' },
-          { question: 'KJo를 UTG에서 오픈하는 것은?', options: ['폴드가 맞다','오픈해야 한다','상관없다'], answer: '폴드가 맞다', explanation: 'KJo는 UTG 10% 레인지에 포함되지 않는다. BTN이면 오픈.' }
+          // OX 퀴즈 (워밍업)
+          { question: 'BTN(버튼)에서는 절반 이상의 패로 베팅할 수 있다', options: ['O', 'X'], answer: 'O', explanation: '맞아요! BTN은 뒤에 2명만 남아서 51%, 절반 이상의 패로 베팅할 수 있어요.' },
+          // 포지션 감각형
+          { question: 'KJo(킹-잭 다른 무늬)를 베팅해도 되는 자리는?', options: ['BTN (뒷자리)', 'UTG (앞자리)'], answer: 'BTN (뒷자리)', explanation: 'KJo는 나쁘지 않은 패지만, 앞자리(UTG)에선 부족해요. 뒷자리(BTN)에선 충분히 베팅 가능!' },
+          { question: 'UTG(앞자리)에서 베팅할 수 있는 패는 상위 몇 %?', options: ['10%', '20%', '30%', '50%'], answer: '10%', explanation: '뒤에 8명이나 남아있어요! 정말 좋은 패, 상위 10%만 골라서 베팅해야 해요.' },
+          { question: 'BTN(버튼)에서 베팅할 수 있는 패는 상위 몇 %?', options: ['51%', '30%', '20%', '10%'], answer: '51%', explanation: '뒤에 블라인드 2명만! 거의 절반의 패로 베팅할 수 있는 최고의 자리예요.' },
+          { question: 'CO(커톹)에서 베팅할 수 있는 패는 상위 몇 %?', options: ['30%', '10%', '51%', '22%'], answer: '30%', explanation: 'BTN 바로 앞자리. 뒤에 3명만 남아서 꽤 넓게 플레이 가능해요.' },
+          // 상황 판단형
+          { question: '같은 패(KJo)인데 자리에 따라 베팅/접기가 달라지는 이유는?', options: ['뒤에 남은 사람 수가 다르니까', '카드가 바뀌니까', '기분에 따라'], answer: '뒤에 남은 사람 수가 다르니까', explanation: '핵심이에요! 뒤에 남은 사람이 많으면 누군가 좋은 패를 가질 확률이 높아요. 그래서 앞자리일수록 좋은 패만 골라야 해요.' }
         ]
       },
       {
         id: '2-3', title: 'IP vs OOP', subtitle: '포지션 유불리의 핵심',
         quizType: 'identify', handCount: 4, maxErrors: 2,
-        guideTip: 'IP(In Position) = 상대보다 뒤에서 행동. 정보 이점이 있어서 유리.\nOOP(Out Of Position) = 상대보다 먼저 행동. 정보가 부족해서 불리.\n같은 핸드라도 IP이면 더 넓게 플레이할 수 있어요.',
+        guideTip: '나중에 행동하는 사람이 유리해요. (상대 행동을 보고 결정하니까)\n나중에 행동 = 유리한 자리(IP)\n먼저 행동 = 불리한 자리(OOP)\n같은 패라도 유리한 자리에선 더 적극적으로 플레이할 수 있어요!',
         scenarios: [
           { question: 'BTN이 오픈하고 BB가 콜. 포스트플랍에서 IP인 쪽은?', options: ['BTN','BB'], answer: 'BTN', explanation: 'BB가 먼저 행동하고 BTN이 나중에 행동. BTN이 IP.' },
           { question: 'CO가 오픈하고 HJ가 콜. HJ는 IP인가 OOP인가?', options: ['OOP','IP'], answer: 'OOP', explanation: 'HJ가 CO보다 앞에 앉아있으므로 포스트플랍에서 먼저 행동. OOP.' },
@@ -133,19 +185,30 @@ export const SKILL_TREE: Unit[] = [
   {
     id: 3, title: '첫 번째 공격', subtitle: 'EP 오픈 레인지 (RFI)', emoji: '⚔️', group: '프리플랍',
     lessons: [
-      { id: '3-1', title: 'UTG 오픈', subtitle: '가장 타이트한 오픈', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['UTG'], guideTip: 'UTG는 가장 먼저 행동하는 포지션이에요.\n뒤에 8명이 남아있어서 매우 타이트하게 오픈해야 해요.\n상위 10%만: AA-77, AKs-ATs, A5s-A4s, KQs-98s, AKo-AJo, KQo' },
-      { id: '3-2', title: 'UTG+1 / UTG+2 오픈', subtitle: '얼리 포지션 확장', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['UTG+1', 'UTG+2'], guideTip: 'UTG+1과 UTG+2는 UTG보다 살짝 넓어요.\n66 추가, A9s 추가, 수티드 커넥터 몇 개 추가.\n하지만 여전히 얼리 포지션이라 타이트하게!' },
-      { id: '3-3', title: 'LJ 오픈', subtitle: '미들 포지션의 시작', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['LJ'], guideTip: 'LJ(Lojack)부터 미들 포지션이에요.\n55 추가, A8s-A2s, 수티드 브로드웨이 더 추가.\n오프수트 브로드웨이도 ATo, QJo, JTo까지.' },
-      { id: '3-4', title: 'EP/MP 종합 드릴', subtitle: '앞자리 포지션 총정리', quizType: 'rfi_dynamic', handCount: 8, maxErrors: 3, positions: ['UTG', 'UTG+1', 'UTG+2', 'LJ'], guideTip: '지금까지 배운 UTG ~ LJ를 섞어서 연습해요.\n핵심: 포지션이 뒤로 갈수록 레인지가 넓어진다.\n같은 핸드도 포지션에 따라 레이즈/폴드가 달라져요!' }
+      { id: '3-1', title: 'UTG 오픈', subtitle: '가장 타이트한 오픈', quizType: 'rfi_dynamic', handCount: 7, maxErrors: 3, positions: ['UTG'],
+        guideTip: 'UTG는 가장 먼저 행동하는 자리예요.\n뒤에 8명이나 남아있으니 정말 좋은 패만 골라야 해요.\n베팅할 수 있는 패는 상위 10% 정도뿐!\n레이즈(베팅) 아니면 폴드(포기), 둘 중 하나예요.',
+        scenarios: [
+          { question: 'UTG(앞자리)에서 좋은 패만 골라야 하는 이유는?', options: ['뒤에 8명이나 남아서 누군가 좋은 패를 가질 확률이 높으니까', '앞자리가 불운해서', '규칙이 그래서'], answer: '뒤에 8명이나 남아서 누군가 좋은 패를 가질 확률이 높으니까', explanation: '핵심이에요! 뒤에 남은 사람이 많을수록, 그 중 한 명이 강한 패를 가지고 다시 올릴 확률이 높아요. 그래서 앞자리에선 정말 좋은 패만 골라야 해요.' }
+        ]
+      },
+      { id: '3-2', title: 'UTG+1 / UTG+2 오픈', subtitle: '앞자리 조금 넓히기', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['UTG+1', 'UTG+2'], guideTip: 'UTG+1과 UTG+2는 UTG보다 살짝 넓게 플레이해요.\n뒤에 남은 사람이 1~2명 적으니까요.\n하지만 여전히 앞자리! 아직은 좋은 패만 골라야 해요.' },
+      { id: '3-3', title: 'LJ 오픈', subtitle: '중간 자리의 시작', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['LJ'], guideTip: 'LJ부터 중간 자리예요. 뒤에 5명만 남아서 좀 더 넓게 플레이 가능!\n에이스+같은무늬 패가 더 추가되고,\n높은 카드 조합도 더 플레이할 수 있어요.' },
+      { id: '3-4', title: '앞자리/중간 종합 드릴', subtitle: 'UTG~LJ 총정리', quizType: 'rfi_dynamic', handCount: 8, maxErrors: 3, positions: ['UTG', 'UTG+1', 'UTG+2', 'LJ'], guideTip: '지금까지 배운 UTG ~ LJ를 섞어서 연습해요.\n핵심: 자리가 뒤로 갈수록 더 많은 패를 플레이할 수 있다!\n같은 패도 자리에 따라 베팅/접기가 달라져요.' }
     ]
   },
   {
     id: 4, title: '넓혀가기', subtitle: 'LP 오픈 레인지 (RFI 확장)', emoji: '🔓', group: '프리플랍',
     lessons: [
-      { id: '4-1', title: 'HJ 오픈', subtitle: 'MP/LP 경계', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['HJ'], guideTip: 'HJ(Hijack)는 약 21% 오픈.\n44 추가, A7s-A6s, K7s, 더 많은 수티드 커넥터.\n오프수트도 A9o, K9o, J9o까지.' },
-      { id: '4-2', title: 'CO 오픈', subtitle: '레이트 포지션 진입', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['CO'], guideTip: 'CO(Cutoff)는 약 27% 오픈.\n22-33 추가, K6s-K5s, 많은 수티드 핸드.\n오프수트도 A5o, K8o, T9o, 87o까지. 꽤 넓다!' },
-      { id: '4-3', title: 'BTN 오픈', subtitle: '최고의 포지션, 최대 레인지', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['BTN'], guideTip: 'BTN은 약 51% 오픈. 절반 이상의 핸드를 플레이!\n거의 모든 수티드 핸드, 오프수트도 매우 넓게.\n블라인드 2명만 남았으니 공격적으로!' },
-      { id: '4-4', title: '전 포지션 종합 드릴', subtitle: '모든 포지션 RFI 총정리', quizType: 'rfi_dynamic', handCount: 10, maxErrors: 4, positions: ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN'], guideTip: 'UTG부터 BTN까지 전체 포지션 종합 드릴!\n핵심 질문: 이 핸드를 이 포지션에서 오픈할 것인가?\n포지션별 레인지 차이를 체화시키는 시간이에요.' }
+      { id: '4-1', title: 'HJ 오픈', subtitle: '중간~뒷자리 경계', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['HJ'], guideTip: 'HJ는 뒤에 4명만 남아서 약 21%의 패를 플레이할 수 있어요.\n작은 페어, 에이스+같은무늬 더 추가!\n점점 공격적으로 갈 수 있는 자리예요.' },
+      { id: '4-2', title: 'CO 오픈', subtitle: '뒷자리 진입', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['CO'], guideTip: 'CO(커톹)는 뒤에 3명만! 약 27%의 패를 플레이해요.\n아주 작은 페어도 OK, 같은 무늬 패 대부분 OK.\n꽤 넓게 공격할 수 있는 좋은 자리예요!' },
+      { id: '4-3', title: 'BTN 오픈', subtitle: '최고의 자리, 최대 범위', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['BTN'], guideTip: 'BTN(버튼)은 최고의 자리! 무려 51%, 절반 이상의 패로 베팅 가능!\n뒤에 블라인드 2명만 남았으니 마음껏 공격하세요.\n여기서 돈을 가장 많이 벌어요!' },
+      { id: '4-4', title: '전체 자리 종합 드릴', subtitle: '모든 자리 총정리', quizType: 'rfi_dynamic', handCount: 10, maxErrors: 4, positions: ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN'],
+        guideTip: 'UTG부터 BTN까지 모든 자리를 섞어서 연습!\n핵심 질문: 이 패를 이 자리에서 베팅할 것인가?\n자리별 차이를 몸에 익히는 시간이에요.',
+        scenarios: [
+          { question: 'ATo(에이스-텐 다른무늬)는 어떤 자리에서부터 베팅 가능할까?', options: ['LJ (중간자리)부터', 'UTG (앞자리)부터', 'BTN (버튼)에서만'], answer: 'LJ (중간자리)부터', explanation: 'ATo는 괜찮은 패지만, 앞자리(UTG~UTG+2)에선 부족해요. 중간자리(LJ)부터 베팅할 수 있어요. 자리가 뒤로 갈수록 더 많은 패를 플레이할 수 있다는 걸 기억하세요!' },
+          { question: '22(가장 작은 페어)는 어떤 자리에서부터 베팅 가능할까?', options: ['CO (뒷자리)부터', 'UTG (앞자리)부터', '어디서든 가능'], answer: 'CO (뒷자리)부터', explanation: '작은 페어는 뒷자리에서만 베팅해요. 앞자리에서 22로 베팅하면 뒤에서 더 좋은 패한테 당할 확률이 높아요.' }
+        ]
+      }
     ]
   },
   {

@@ -6,6 +6,7 @@ import { SUIT_NAMES } from '@/data/constants';
 import { useSound } from '@/hooks/useSound';
 import PokerTable from '@/components/PokerTable';
 import GlossaryTip from '@/components/GlossaryTip';
+import AutoGlossary from '@/components/AutoGlossary';
 import RangeChart from '@/components/RangeChart';
 import type { Scenario } from '@/data/skill-tree';
 
@@ -152,7 +153,7 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
           <div className={`text-base font-bold mb-1.5 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
             {isCorrect ? (combo >= 5 ? '🔥 연속 정답!' : combo >= 3 ? '🎯 연속 정답!' : '정답!') : '오답!'}
           </div>
-          <div className="text-sm text-gray-300 leading-6">{scenario.explanation}</div>
+          <div className="text-sm text-gray-300 leading-6"><AutoGlossary text={scenario.explanation || ''} /></div>
 
           {/* Range Chart for dynamic quizzes */}
           {isDynamic && scenario.position && (
@@ -224,7 +225,7 @@ function IdentifyScenario({ scenario, answered, selectedAnswer, onAnswer }: {
   return (
     <>
       {scenario.show && <div className="text-center text-3xl font-bold text-amber-400 mb-4 tracking-wider animate-card-deal">{scenario.show}</div>}
-      <div className="text-center text-base font-bold text-gray-200 mb-5 leading-6">{scenario.question}</div>
+      <div className="text-center text-base font-bold text-gray-200 mb-5 leading-6"><AutoGlossary text={scenario.question || ''} /></div>
       <OptionButtons options={scenario.options} answer={scenario.answer} answered={answered} selectedAnswer={selectedAnswer} onAnswer={onAnswer} />
     </>
   );

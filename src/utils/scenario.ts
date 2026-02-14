@@ -109,32 +109,86 @@ export function generateVs3betScenarios(positions: string[], count: number) {
   return scenarios;
 }
 
+// 포지션별 쉬운 설명
+const POS_DESC: Record<string, string> = {
+  'UTG': '앞자리(UTG)는 뒤에 8명이나 남아있어서 정말 좋은 패만 골라야 해요.',
+  'UTG+1': '앞자리(UTG+1)는 뒤에 7명이 남아서 타이트하게 골라야 해요.',
+  'UTG+2': '앞자리(UTG+2)는 아직 뒤에 6명이 남아서 신중해야 해요.',
+  'LJ': '중간 자리(LJ)는 뒤에 5명이 남아서 조금 더 넓게 플레이 가능해요.',
+  'HJ': '중간 자리(HJ)는 뒤에 4명만 남아서 꽤 넓게 플레이할 수 있어요.',
+  'CO': '뒷자리(CO)는 뒤에 3명만 남아서 넓게 공격할 수 있어요.',
+  'BTN': '버튼(BTN)은 최고의 자리! 뒤에 2명(블라인드)만 남아서 절반 이상의 패로 공격 가능!',
+  'SB': '스몰 블라인드(SB)는 특수한 자리예요. 이미 돈을 조금 넣었지만 포스트플랍에서 불리해요.',
+  'BB': '빅 블라인드(BB)는 이미 돈을 넣은 상태라 싸게 게임에 참여할 수 있어요.',
+};
+
+// 핸드 설명 헬퍼
+function describeHand(hand: string): string {
+  const isPair = hand.length === 2 && hand[0] === hand[1];
+  const isSuited = hand.endsWith('s');
+  const isOffsuit = hand.endsWith('o');
+  const highRanks = ['A', 'K', 'Q', 'J', 'T'];
+  const r1 = hand[0], r2 = hand[1];
+  const bothHigh = highRanks.includes(r1) && highRanks.includes(r2);
+
+  if (isPair) {
+    if (['A','K','Q','J'].includes(r1)) return '높은 페어라서 아주 강해요!';
+    if (['T','9','8'].includes(r1)) return '중간 페어예요. 괜찮은 패!';
+    return '작은 페어예요. 상황에 따라 달라요.';
+  }
+  if (r1 === 'A' && isSuited && !highRanks.includes(r2)) return '에이스 + 같은 무늬! 플러시 가능성이 있어서 좋은 패예요.';
+  if (r1 === 'A' && isOffsuit && !highRanks.includes(r2)) return '에이스가 있지만 다른 무늬라 플러시 가능성이 없어요.';
+  if (bothHigh && isSuited) return '높은 카드 2장 + 같은 무늬! 강한 패예요.';
+  if (bothHigh && isOffsuit) return '높은 카드 2장이지만 다른 무늬라 조금 약해요.';
+  if (isSuited) return '같은 무늬라서 플러시 가능성이 있어요.';
+  return '';
+}
+
 function generateRfiExplanation(hand: string, position: string, correctAction: string): string {
   const range = RFI_RANGES[position];
   const pct = range?.percent || '';
-  if (correctAction === 'raise') return `${hand}은(는) ${position}의 RFI 레인지(${pct})에 포함됩니다. 레이즈!`;
-  if (correctAction === 'limp') return `${hand}은(는) SB에서 림프하는 핸드입니다. 밸류가 부족하지만 버리기엔 아까워요.`;
-  return `${hand}은(는) ${position}에서 오픈하기엔 너무 약합니다. 폴드가 맞아요.`;
+  const posDesc = POS_DESC[position] || '';
+  const handDesc = describeHand(hand);
+
+  if (correctAction === 'raise') {
+    return `${hand}은(는) 이 자리(${position})에서 베팅해도 되는 패예요! 👍\n${handDesc ? handDesc + ' ' : ''}상위 ${pct}에 포함되니까 자신있게 레이즈!`;
+  }
+  if (correctAction === 'limp') {
+    return `${hand}은(는) SB에서 살짝 참여하는 게 좋아요.\n크게 올리기엔 약하지만, 접기엔 아까운 패예요.\n적은 돈만 내고 다음 카드를 봐요.`;
+  }
+  return `${hand}은(는) 이 자리(${position})에서는 접는 게 맞아요.\n${posDesc}\n${handDesc ? handDesc + ' 하지만 ' : ''}이 자리에서 베팅하기엔 부족해요. 좋은 자리를 기다리세요!`;
 }
 
 function generateFacingExplanation(hand: string, myPos: string, vsPos: string, correctAction: string, range: any): string {
-  const pct = range?.percent || '';
+  const handDesc = describeHand(hand);
+  const isValue = range.value?.includes(hand);
+
   if (correctAction === '3bet') {
-    if (range.value?.includes(hand)) return `${hand}은(는) ${myPos}에서 ${vsPos} 오픈에 밸류 3bet 합니다. 강한 핸드로 팟을 키워요! (${pct})`;
-    return `${hand}은(는) ${myPos}에서 ${vsPos} 오픈에 블러프 3bet 합니다. 폴드 에퀴티를 노려요. (${pct})`;
+    if (isValue) {
+      return `${hand}은(는) 여기서 다시 올려야 해요! (3벳)\n${handDesc ? handDesc + ' ' : ''}상대(${vsPos})가 먼저 베팅했지만, 내 패가 더 강을 확률이 높으니까 판을 키우세요!`;
+    }
+    return `${hand}은(는) 여기서 다시 올려서 상대를 흔들어요! (3벳)\n최강 패는 아니지만, 상대가 포기하면 이득이에요.\n${hand.startsWith('A') ? '에이스가 있어서 상대가 AA/AK를 가질 확률을 줄여주기도 해요.' : ''}`;
   }
-  if (correctAction === 'call') return `${hand}은(는) ${myPos}에서 ${vsPos} 오픈에 콜합니다. 3bet하기엔 약하지만 폴드하기엔 강해요. (${pct})`;
-  return `${hand}은(는) ${myPos}에서 ${vsPos} 오픈에 폴드합니다. 이 상황에서 참여하기엔 약해요.`;
+  if (correctAction === 'call') {
+    return `${hand}은(는) 여기서 따라가는 게 좋아요. (콜)\n다시 올리기엔(3벳) 좀 부족하고, 접기엔 아까운 패예요.\n${handDesc ? handDesc + ' ' : ''}다음 카드를 보면서 기회를 노려요!`;
+  }
+  return `${hand}은(는) 여기서 접는 게 현명해요.\n상대가 ${vsPos}에서 베팅했다는 건 꽤 좋은 패를 가졌다는 뜻이에요.\n이 패로 싸우기엔 불리해요. 다음 기회를 기다리세요!`;
 }
 
 function generateVs3betExplanation(hand: string, pos: string, correctAction: string, range: any): string {
-  const pct = range?.percent || '';
+  const handDesc = describeHand(hand);
+  const isValue = range.fourBetValue?.includes(hand);
+
   if (correctAction === '4bet') {
-    if (range.fourBetValue?.includes(hand)) return `${hand}은(는) ${pos}에서 3bet을 받으면 밸류 4bet! 매우 강한 핸드입니다. (${pct})`;
-    return `${hand}은(는) ${pos}에서 블러프 4bet 합니다. 에이스 블로커로 폴드를 유도해요. (${pct})`;
+    if (isValue) {
+      return `${hand}은(는) 아주 강한 패! 상대가 다시 올렸어도(3벳) 한 번 더 올려요! (4벳)\n${handDesc ? handDesc + ' ' : ''}이런 패는 자신있게 밀어붙여야 해요!`;
+    }
+    return `${hand}은(는) 여기서 한 번 더 올려서(4벳) 상대를 압박해요.\n${hand.startsWith('A') ? '에이스가 있어서 상대의 AA 가능성을 줄여주고, ' : ''}상대가 포기하면 큰 이득!`;
   }
-  if (correctAction === 'call') return `${hand}은(는) ${pos}에서 3bet에 콜합니다. 4bet하기엔 약하지만 충분히 플레이 가능. (${pct})`;
-  return `${hand}은(는) ${pos}에서 3bet을 받으면 폴드합니다. 오픈은 했지만 3bet에 버틸 만큼 강하지 않아요.`;
+  if (correctAction === 'call') {
+    return `${hand}은(는) 상대가 다시 올렸지만(3벳), 접기엔 아까운 패예요.\n한 번 더 올리기엔(4벳) 부담스럽고, 여기선 따라가면서(콜) 다음 카드를 봐요.\n${handDesc}`;
+  }
+  return `${hand}은(는) 상대가 다시 올렸으면(3벳) 여기서 접어야 해요.\n처음 베팅은 했지만, 상대가 다시 올렸다는 건 강한 패라는 신호예요.\n${handDesc ? handDesc + ' 하지만 ' : ''}이 상황에서 버티기엔 부족해요.`;
 }
 
 export function generateTestOutScenarios(unitId: number): (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[] {
