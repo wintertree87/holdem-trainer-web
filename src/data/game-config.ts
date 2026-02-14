@@ -44,3 +44,15 @@ export const GAME_TIERS: GameTier[] = [
 
 export const HANDS_PER_MATCH = 10;
 export const STARTING_STACK = 100; // bb
+
+// 6-max positions
+export const SIX_MAX_POSITIONS = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'] as const;
+
+// Valid position matchups: [opener (earlier), defender (later)]
+export const POSITION_MATCHUPS: [string, string][] = [
+  ['UTG', 'HJ'], ['UTG', 'CO'], ['UTG', 'BTN'], ['UTG', 'SB'], ['UTG', 'BB'],
+  ['HJ', 'CO'], ['HJ', 'BTN'], ['HJ', 'SB'], ['HJ', 'BB'],
+  ['CO', 'BTN'], ['CO', 'SB'], ['CO', 'BB'],
+  ['BTN', 'SB'], ['BTN', 'BB'],
+  ['SB', 'BB'],
+];

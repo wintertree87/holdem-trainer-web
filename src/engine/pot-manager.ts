@@ -4,7 +4,7 @@ export type BetState = {
   botStack: number;
   heroStreetBet: number;
   botStreetBet: number;
-  currentBet: number;  // highest bet on current street
+  currentBet: number;
   minRaise: number;
 };
 
@@ -16,30 +16,30 @@ export type GameAction =
   | { type: 'raise'; amount: number }
   | { type: 'allin' };
 
-const STARTING_STACK = 100; // bb
 const SB_SIZE = 0.5;
 const BB_SIZE = 1;
 
-export function initBetState(heroIsButton: boolean): BetState {
-  // HU: Button posts SB, other posts BB
-  const heroSB = heroIsButton;
-  return {
-    pot: SB_SIZE + BB_SIZE,
-    heroStack: STARTING_STACK - (heroSB ? SB_SIZE : BB_SIZE),
-    botStack: STARTING_STACK - (heroSB ? BB_SIZE : SB_SIZE),
-    heroStreetBet: heroSB ? SB_SIZE : BB_SIZE,
-    botStreetBet: heroSB ? BB_SIZE : SB_SIZE,
-    currentBet: BB_SIZE,
-    minRaise: BB_SIZE, // min raise size = 1bb
-  };
-}
+// Position-aware blind posting for 6-max
+export function initBetStateForPositions(
+  heroStack: number,
+  botStack: number,
+  heroPosition: string,
+  botPosition: string
+): BetState {
+  let heroBlind = 0;
+  let botBlind = 0;
 
-export function initBetStateWithStacks(heroStack: number, botStack: number, heroIsButton: boolean): BetState {
-  const heroSB = heroIsButton;
-  const heroBlind = heroSB ? SB_SIZE : BB_SIZE;
-  const botBlind = heroSB ? BB_SIZE : SB_SIZE;
+  if (heroPosition === 'BB') heroBlind = BB_SIZE;
+  else if (heroPosition === 'SB') heroBlind = SB_SIZE;
+
+  if (botPosition === 'BB') botBlind = BB_SIZE;
+  else if (botPosition === 'SB') botBlind = SB_SIZE;
+
+  // Pot always has full blinds (1.5). Ghost players cover any gap.
+  const pot = SB_SIZE + BB_SIZE;
+
   return {
-    pot: heroBlind + botBlind,
+    pot,
     heroStack: heroStack - heroBlind,
     botStack: botStack - botBlind,
     heroStreetBet: heroBlind,
@@ -59,7 +59,6 @@ export function applyAction(
 
   switch (action.type) {
     case 'fold':
-      // No stack changes — winner determined by game-state
       return s;
 
     case 'check':
@@ -99,7 +98,7 @@ export function applyAction(
 
     case 'raise': {
       const myStreetBet = isHero ? s.heroStreetBet : s.botStreetBet;
-      const totalToRaise = action.amount; // total street bet after raise
+      const totalToRaise = action.amount;
       const raiseAmount = Math.min(
         totalToRaise - myStreetBet,
         isHero ? s.heroStack : s.botStack
@@ -144,7 +143,7 @@ export function startNewStreet(state: BetState): BetState {
     heroStreetBet: 0,
     botStreetBet: 0,
     currentBet: 0,
-    minRaise: 1, // 1bb min
+    minRaise: 1,
   };
 }
 
@@ -162,9 +161,7 @@ export function getAvailableActions(
   const amountToCall = state.currentBet - myStreetBet;
 
   if (amountToCall <= 0) {
-    // No bet to face — can check or bet
     actions.push({ type: 'check' });
-    // Bet sizes: 1/3 pot, 2/3 pot, pot
     const potBets = [
       Math.round(state.pot / 3),
       Math.round(state.pot * 2 / 3),
@@ -174,13 +171,10 @@ export function getAvailableActions(
       actions.push({ type: 'bet', amount: b });
     }
   } else {
-    // Facing a bet — can fold, call, or raise
     actions.push({ type: 'fold' });
     actions.push({ type: 'call' });
-    // Raise sizes
     const minRaiseTotal = state.currentBet + Math.max(state.minRaise, 1);
     if (minRaiseTotal < myStreetBet + myStack) {
-      // Standard raises: 2.5x, 3x of current bet (preflop style)
       const raises = [
         Math.round(state.currentBet * 2.5),
         Math.round(state.currentBet * 3),
@@ -191,7 +185,6 @@ export function getAvailableActions(
     }
   }
 
-  // Always can go all-in if has chips
   if (myStack > 0) {
     actions.push({ type: 'allin' });
   }

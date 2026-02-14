@@ -3,12 +3,12 @@ import { Deck } from './deck';
 import {
   type BetState,
   type GameAction,
-  initBetStateWithStacks,
+  initBetStateForPositions,
   applyAction,
   startNewStreet,
   getAvailableActions,
 } from './pot-manager';
-import { evaluateBestHand, compareHandRanks, type HandRank, HAND_NAMES } from './hand-evaluator';
+import { evaluateBestHand, compareHandRanks, type HandRank } from './hand-evaluator';
 
 export type Street = 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
 
@@ -33,22 +33,29 @@ export type GameState = {
   botHand: Card[];
   communityCards: Card[];
   bets: BetState;
-  heroIsButton: boolean;
+  heroPosition: string;
+  botPosition: string;
   actionHistory: ActionRecord[];
   result: GameResult | null;
-  streetActionCount: number; // actions taken on current street
+  streetActionCount: number;
   lastActor: 'hero' | 'bot' | null;
 };
+
+// Preflop: UTG acts first, BB acts last
+const PREFLOP_ORDER = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
+// Postflop: SB (OOP) acts first, BTN (IP) acts last
+const POSTFLOP_ORDER = ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN'];
 
 export function initHand(
   heroStack: number,
   botStack: number,
-  heroIsButton: boolean
+  heroPosition: string,
+  botPosition: string
 ): GameState {
   const deck = new Deck();
   const heroHand = deck.deal(2);
   const botHand = deck.deal(2);
-  const bets = initBetStateWithStacks(heroStack, botStack, heroIsButton);
+  const bets = initBetStateForPositions(heroStack, botStack, heroPosition, botPosition);
 
   return {
     street: 'preflop',
@@ -57,7 +64,8 @@ export function initHand(
     botHand,
     communityCards: [],
     bets,
-    heroIsButton,
+    heroPosition,
+    botPosition,
     actionHistory: [],
     result: null,
     streetActionCount: 0,
@@ -65,52 +73,32 @@ export function initHand(
   };
 }
 
-// HU action order:
-// Preflop: BTN(SB) acts first, then BB
-// Postflop: BB acts first (OOP), then BTN(IP)
 export function getNextToAct(state: GameState): 'hero' | 'bot' | null {
   if (state.result) return null;
 
-  // Check if both players are all-in
+  // Both all-in
   if (state.bets.heroStack <= 0 && state.bets.botStack <= 0) return null;
 
-  const { street, heroIsButton, streetActionCount, lastActor } = state;
+  const { street, heroPosition, botPosition, streetActionCount, lastActor } = state;
 
   if (streetActionCount === 0) {
-    // First action on the street
-    if (street === 'preflop') {
-      // BTN(SB) acts first preflop
-      return heroIsButton ? 'hero' : 'bot';
-    } else {
-      // BB acts first postflop (BB = non-button)
-      return heroIsButton ? 'bot' : 'hero';
-    }
+    // First action on the street — earlier position acts first
+    const order = street === 'preflop' ? PREFLOP_ORDER : POSTFLOP_ORDER;
+    const heroIdx = order.indexOf(heroPosition);
+    const botIdx = order.indexOf(botPosition);
+    return heroIdx < botIdx ? 'hero' : 'bot';
   }
 
-  // After first action, alternate
   if (!lastActor) return null;
 
   // Check if street is complete
-  const heroBet = state.bets.heroStreetBet;
-  const botBet = state.bets.botStreetBet;
-  const betsEqual = Math.abs(heroBet - botBet) < 0.01;
-
-  // If the last action was check/call and bets are equal, street is done
   const lastAction = state.actionHistory[state.actionHistory.length - 1];
-  if (lastAction && (lastAction.action.type === 'check' || lastAction.action.type === 'call') && betsEqual && streetActionCount >= 2) {
-    return null; // street complete
-  }
 
-  // If last action was a call and bets are equal, street is done (even with 1 action count for preflop BB check)
-  if (lastAction && lastAction.action.type === 'call') {
-    return null;
-  }
+  // Call always ends the street (caller matched the bet)
+  if (lastAction && lastAction.action.type === 'call') return null;
 
-  // For preflop: after SB just calls (limps), BB still needs to act
-  // streetActionCount >= 2 && both checked = done
-  if (lastAction && lastAction.action.type === 'check' && streetActionCount >= 2) {
-    return null;
-  }
+  // Two checks = street done
+  if (lastAction && lastAction.action.type === 'check' && streetActionCount >= 2) return null;
 
   return lastActor === 'hero' ? 'bot' : 'hero';
 }
@@ -165,7 +153,6 @@ function resolveShowdown(state: GameState): GameState {
   };
 }
 
-// Deal remaining community cards for all-in runout
 function dealRemainingCards(state: GameState): GameState {
   const s = { ...state };
   const needed = 5 - s.communityCards.length;
@@ -203,7 +190,7 @@ export function applyGameAction(
     return s;
   }
 
-  // Check if both all-in → run out remaining cards
+  // Both all-in → run out remaining cards
   if (s.bets.heroStack <= 0 && s.bets.botStack <= 0) {
     s = dealRemainingCards(s);
     return resolveShowdown(s);
@@ -222,13 +209,10 @@ export function applyGameAction(
       return resolveShowdown(s);
     }
     s = advanceStreet(s);
-    // After advancing, check if both are all-in (one might have 0 stack from earlier)
-    if (s.bets.heroStack <= 0 || s.bets.botStack <= 0) {
-      // Skip through remaining streets
-      if (s.bets.heroStack <= 0 && s.bets.botStack <= 0) {
-        s = dealRemainingCards(s);
-        return resolveShowdown(s);
-      }
+    // After advancing, if both all-in, run out
+    if (s.bets.heroStack <= 0 && s.bets.botStack <= 0) {
+      s = dealRemainingCards(s);
+      return resolveShowdown(s);
     }
   }
 

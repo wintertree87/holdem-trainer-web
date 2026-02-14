@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { type GameTier, HANDS_PER_MATCH, STARTING_STACK } from '@/data/game-config';
+import { type GameTier, HANDS_PER_MATCH, STARTING_STACK, POSITION_MATCHUPS } from '@/data/game-config';
 import { type GameState, type GameResult, initHand, applyGameAction, getNextToAct, getHeroActions } from '@/engine/game-state';
 import { type GameAction } from '@/engine/pot-manager';
 import { decideBotAction } from '@/engine/bot-ai';
@@ -20,7 +20,8 @@ export type MatchState = {
   currentHand: GameState | null;
   matchHistory: HandRecord[];
   matchComplete: boolean;
-  heroIsButton: boolean;
+  heroPosition: string;
+  botPosition: string;
 };
 
 export type MatchResult = {
@@ -35,6 +36,15 @@ export type MatchResult = {
   bbWon: number;
 };
 
+function pickRandomPositions(): { heroPosition: string; botPosition: string } {
+  const matchup = POSITION_MATCHUPS[Math.floor(Math.random() * POSITION_MATCHUPS.length)];
+  const heroIsOpener = Math.random() < 0.5;
+  return {
+    heroPosition: heroIsOpener ? matchup[0] : matchup[1],
+    botPosition: heroIsOpener ? matchup[1] : matchup[0],
+  };
+}
+
 export function useGameSession() {
   const [match, setMatch] = useState<MatchState | null>(null);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
@@ -42,8 +52,8 @@ export function useGameSession() {
   const botTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startMatch = useCallback((tier: GameTier) => {
-    const heroIsButton = Math.random() < 0.5;
-    const hand = initHand(STARTING_STACK, STARTING_STACK, heroIsButton);
+    const { heroPosition, botPosition } = pickRandomPositions();
+    const hand = initHand(STARTING_STACK, STARTING_STACK, heroPosition, botPosition);
 
     const newMatch: MatchState = {
       tier,
@@ -53,7 +63,8 @@ export function useGameSession() {
       currentHand: hand,
       matchHistory: [],
       matchComplete: false,
-      heroIsButton,
+      heroPosition,
+      botPosition,
     };
 
     setMatch(newMatch);
@@ -80,15 +91,12 @@ export function useGameSession() {
         const botAction = decideBotAction(hand);
         let newHand = applyGameAction(hand, 'bot', botAction);
 
-        // Check if hand is over
         if (newHand.result) {
           return { ...prev, currentHand: newHand };
         }
 
-        // Check if bot should act again
         const nextNext = getNextToAct(newHand);
         if (nextNext === 'bot') {
-          // Schedule another bot action
           const updated = { ...prev, currentHand: newHand };
           setTimeout(() => scheduleBotAction(updated), 500);
           return updated;
@@ -96,7 +104,7 @@ export function useGameSession() {
 
         return { ...prev, currentHand: newHand };
       });
-    }, 600 + Math.random() * 400); // 600-1000ms delay
+    }, 600 + Math.random() * 400);
   }, []);
 
   const handleHeroAction = useCallback((action: GameAction) => {
@@ -113,7 +121,6 @@ export function useGameSession() {
         return updated;
       }
 
-      // If bot's turn, schedule
       const nextNext = getNextToAct(newHand);
       if (nextNext === 'bot') {
         setTimeout(() => scheduleBotAction(updated), 100);
@@ -132,15 +139,6 @@ export function useGameSession() {
       if (!prev || !prev.currentHand) return prev;
 
       const result = prev.currentHand.result;
-      let stackChange = 0;
-      if (result) {
-        if (result.winner === 'hero') {
-          stackChange = result.potWon / 2; // net win = half pot (we put half in)
-        } else if (result.winner === 'bot') {
-          stackChange = -(result.potWon / 2);
-        }
-        // For tie, stackChange = 0
-      }
 
       // Calculate stacks based on actual betting
       const handBets = prev.currentHand.bets;
@@ -203,9 +201,9 @@ export function useGameSession() {
         };
       }
 
-      // Start next hand with alternating button
-      const newHeroIsButton = !prev.heroIsButton;
-      const newHand = initHand(newHeroStack, newBotStack, newHeroIsButton);
+      // Next hand — pick new random positions
+      const { heroPosition, botPosition } = pickRandomPositions();
+      const newHand = initHand(newHeroStack, newBotStack, heroPosition, botPosition);
       const updated: MatchState = {
         ...prev,
         handNumber: newHandNumber,
@@ -213,7 +211,8 @@ export function useGameSession() {
         botStack: newBotStack,
         currentHand: newHand,
         matchHistory: newHistory,
-        heroIsButton: newHeroIsButton,
+        heroPosition,
+        botPosition,
       };
 
       setShowResult(false);

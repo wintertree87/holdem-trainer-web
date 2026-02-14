@@ -1,9 +1,10 @@
-import { type Card } from '@/data/constants';
 import { type GameState, getBotActions } from './game-state';
-import { type GameAction, type BetState } from './pot-manager';
+import { type GameAction } from './pot-manager';
 import { getHandNotation } from '@/utils/hand';
 import { getCorrectAction_RFI, getCorrectAction_Facing, getCorrectAction_Vs3bet } from '@/utils/correct-action';
 import { evaluateHandStrength, analyzeBoardTexture } from '@/utils/board';
+
+const PREFLOP_ORDER = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
 
 // Bot decides what action to take
 export function decideBotAction(state: GameState): GameAction {
@@ -19,31 +20,36 @@ export function decideBotAction(state: GameState): GameAction {
 
 function decidePreflopAction(state: GameState, available: GameAction[]): GameAction {
   const notation = getHandNotation(state.botHand[0], state.botHand[1]);
-  const botIsButton = !state.heroIsButton; // bot is opposite of hero
+  const { heroPosition, botPosition } = state;
 
-  // Count preflop actions to determine phase
+  const botIdx = PREFLOP_ORDER.indexOf(botPosition);
+  const heroIdx = PREFLOP_ORDER.indexOf(heroPosition);
+  const botIsOpener = botIdx < heroIdx;
+
   const preflopActions = state.actionHistory.filter(a => a.street === 'preflop');
   const heroActions = preflopActions.filter(a => a.actor === 'hero');
   const botActions = preflopActions.filter(a => a.actor === 'bot');
 
-  // Phase 1: Bot opens (RFI)
-  if (botIsButton && botActions.length === 0) {
-    // Bot is BTN/SB, first to act preflop
-    const rfiAction = getCorrectAction_RFI(notation, 'BTN');
+  // Case 1: Bot is opener (earlier position), first action
+  if (botIsOpener && botActions.length === 0) {
+    const rfiAction = getCorrectAction_RFI(notation, botPosition);
     if (rfiAction === 'raise') {
       const raiseAction = available.find(a => a.type === 'raise') || available.find(a => a.type === 'bet');
       return raiseAction || findAction(available, 'call', 'check');
     }
-    // Fold or limp
+    if (rfiAction === 'limp' && botPosition === 'SB') {
+      return findAction(available, 'call', 'fold');
+    }
     return findAction(available, 'fold', 'check');
   }
 
-  if (!botIsButton && botActions.length === 0 && heroActions.length > 0) {
-    // Bot is BB, facing hero open
+  // Case 2: Bot is defender, facing hero's action
+  if (!botIsOpener && botActions.length === 0 && heroActions.length > 0) {
     const lastHeroAction = heroActions[heroActions.length - 1];
+
     if (lastHeroAction.action.type === 'raise' || lastHeroAction.action.type === 'bet' || lastHeroAction.action.type === 'allin') {
-      // Hero raised, bot faces RFI
-      const facingAction = getCorrectAction_Facing(notation, 'BB', 'BTN');
+      // Facing RFI — use position-specific range
+      const facingAction = getCorrectAction_Facing(notation, botPosition, heroPosition);
       if (facingAction === '3bet') {
         const raiseAction = available.find(a => a.type === 'raise');
         return raiseAction || findAction(available, 'call', 'check');
@@ -53,15 +59,25 @@ function decidePreflopAction(state: GameState, available: GameAction[]): GameAct
       }
       return findAction(available, 'fold', 'check');
     }
-    // Hero limped, bot checks
-    return findAction(available, 'check', 'call');
+
+    // Hero limped (called without raising)
+    if (botPosition === 'BB') {
+      // BB can check or raise after a limp
+      const raiseHands = ['AA','KK','QQ','JJ','TT','99','AKs','AQs','AJs','ATs','KQs','KJs','AKo','AQo'];
+      if (raiseHands.includes(notation) && Math.random() < 0.7) {
+        const raiseAction = available.find(a => a.type === 'raise') || available.find(a => a.type === 'bet');
+        if (raiseAction) return raiseAction;
+      }
+      return findAction(available, 'check', 'call');
+    }
+    return findAction(available, 'check', 'fold');
   }
 
-  // Phase 2: Bot faces 3bet (as opener)
-  if (botIsButton && botActions.length >= 1) {
+  // Case 3: Bot opened, facing 3bet
+  if (botIsOpener && botActions.length >= 1) {
     const lastHeroAction = heroActions[heroActions.length - 1];
     if (lastHeroAction && (lastHeroAction.action.type === 'raise' || lastHeroAction.action.type === 'allin')) {
-      const vs3betAction = getCorrectAction_Vs3bet(notation, 'BTN');
+      const vs3betAction = getCorrectAction_Vs3bet(notation, botPosition);
       if (vs3betAction === '4bet') {
         const raiseAction = available.find(a => a.type === 'raise');
         return raiseAction || findAction(available, 'allin', 'call');
@@ -73,11 +89,10 @@ function decidePreflopAction(state: GameState, available: GameAction[]): GameAct
     }
   }
 
-  // Phase 2: Bot faces 4bet (as 3bettor)
-  if (!botIsButton && botActions.length >= 1) {
+  // Case 4: Bot 3bet, facing 4bet
+  if (!botIsOpener && botActions.length >= 1) {
     const lastHeroAction = heroActions[heroActions.length - 1];
     if (lastHeroAction && (lastHeroAction.action.type === 'raise' || lastHeroAction.action.type === 'allin')) {
-      // Facing 4bet — only call with premium
       const premium = ['AA', 'KK', 'QQ', 'JJ', 'AKs', 'AKo'];
       if (premium.includes(notation)) {
         return findAction(available, 'allin', 'call');
@@ -90,16 +105,14 @@ function decidePreflopAction(state: GameState, available: GameAction[]): GameAct
     }
   }
 
-  // Default: check or fold
   return findAction(available, 'check', 'fold');
 }
 
 function decidePostflopAction(state: GameState, available: GameAction[]): GameAction {
   const board = state.communityCards;
-  const texture = analyzeBoardTexture(board.slice(0, 3)); // use flop texture
+  const texture = analyzeBoardTexture(board.slice(0, 3));
   const strength = evaluateHandStrength(state.botHand, board, texture);
 
-  const canCheck = available.some(a => a.type === 'check');
   const canBet = available.some(a => a.type === 'bet');
   const facingBet = available.some(a => a.type === 'call');
 
@@ -108,7 +121,6 @@ function decidePostflopAction(state: GameState, available: GameAction[]): GameAc
   // Strong hand (value >= 60): bet/raise aggressively
   if (strength.value >= 60) {
     if (facingBet) {
-      // Raise sometimes (40%), call rest
       if (rand < 0.4) {
         const raiseAction = available.find(a => a.type === 'raise');
         if (raiseAction) return raiseAction;
@@ -116,7 +128,6 @@ function decidePostflopAction(state: GameState, available: GameAction[]): GameAc
       return findAction(available, 'call', 'check');
     }
     if (canBet) {
-      // Bet 2/3 pot
       const betAction = available.find(a => a.type === 'bet' && a.amount >= Math.round(state.bets.pot * 0.5));
       return betAction || available.find(a => a.type === 'bet') || findAction(available, 'check', 'fold');
     }
@@ -126,12 +137,10 @@ function decidePostflopAction(state: GameState, available: GameAction[]): GameAc
   // Medium hand (30~59): check/call, sometimes bet
   if (strength.value >= 30) {
     if (facingBet) {
-      // Call most of the time (75%), fold sometimes
       if (rand < 0.75) return findAction(available, 'call', 'check');
       return findAction(available, 'fold', 'check');
     }
     if (canBet && rand < 0.3) {
-      // Occasional bet (30%)
       const smallBet = available.find(a => a.type === 'bet');
       if (smallBet) return smallBet;
     }
@@ -141,9 +150,7 @@ function decidePostflopAction(state: GameState, available: GameAction[]): GameAc
   // Draw hands: semi-bluff
   if (strength.hasDraws && strength.draws.length > 0) {
     if (facingBet) {
-      // Call with draws (60%)
       if (rand < 0.6) return findAction(available, 'call', 'check');
-      // Raise as semi-bluff (15%)
       if (rand < 0.75) {
         const raiseAction = available.find(a => a.type === 'raise');
         if (raiseAction) return raiseAction;
@@ -152,7 +159,6 @@ function decidePostflopAction(state: GameState, available: GameAction[]): GameAc
       return findAction(available, 'fold', 'check');
     }
     if (canBet && rand < 0.35) {
-      // Semi-bluff bet (35%)
       const betAction = available.find(a => a.type === 'bet');
       if (betAction) return betAction;
     }
@@ -161,12 +167,10 @@ function decidePostflopAction(state: GameState, available: GameAction[]): GameAc
 
   // Air: occasional bluff
   if (facingBet) {
-    // Fold most of the time (85%)
     if (rand < 0.85) return findAction(available, 'fold', 'check');
     return findAction(available, 'call', 'fold');
   }
   if (canBet && rand < 0.2) {
-    // Bluff 20%
     const betAction = available.find(a => a.type === 'bet');
     if (betAction) return betAction;
   }
