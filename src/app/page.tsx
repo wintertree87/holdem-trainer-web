@@ -253,16 +253,19 @@ export default function Home() {
   }, []);
 
   // Back button handling:
-  // - On home/tree screen: let the browser behave normally (user can leave)
-  // - During lesson (guide/quiz/result): back button returns to skill tree
+  // - Home/tree: prevent going back to auth pages (login/callback/google)
+  // - During lesson: also return to skill tree
   useEffect(() => {
     if (!user) return;
-    if (learnScreen === 'tree') return;
+    window.history.replaceState({ holdemApp: true }, '', '/');
 
-    window.history.pushState({ holdemLesson: true }, '', '/');
     const handlePopState = (e: PopStateEvent) => {
-      if (e.state?.holdemLesson) return;
-      backToTree();
+      if (learnScreen !== 'tree') {
+        backToTree();
+      }
+      if (!e.state?.holdemApp) {
+        window.history.pushState({ holdemApp: true }, '', '/');
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
