@@ -165,6 +165,13 @@ export default function LoginPage() {
             <p className="text-gray-600 text-xs mt-4">
               기기 간 학습 기록 동기화를 위해 로그인이 필요합니다
             </p>
+
+            <a
+              href="/onboarding"
+              className="inline-block text-indigo-400 text-sm mt-3 hover:text-indigo-300 transition-colors"
+            >
+              먼저 체험해보기 →
+            </a>
           </>
         )}
       </div>

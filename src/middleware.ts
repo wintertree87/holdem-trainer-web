@@ -25,9 +25,17 @@ export async function middleware(request: NextRequest) {
   )
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/auth')) {
+  // 로그인된 유저가 /onboarding 접근 시 홈으로 리다이렉트
+  if (user && request.nextUrl.pathname.startsWith('/onboarding')) {
     const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
+  // 미로그인 유저: /login, /auth, /onboarding 외에는 /onboarding으로 리다이렉트
+  if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/auth') && !request.nextUrl.pathname.startsWith('/onboarding')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/onboarding'
     return NextResponse.redirect(url)
   }
 
