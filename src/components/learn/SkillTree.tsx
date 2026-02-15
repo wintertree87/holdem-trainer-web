@@ -106,11 +106,11 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
 
                 {status === 'current' && (
                   <button
-                    className="animate-slide-in w-full mt-3 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl text-white text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    className="animate-slide-in w-full mt-3 py-2.5 px-4 border border-gray-600 rounded-xl text-gray-400 text-xs font-medium hover:border-amber-500/50 hover:text-amber-400 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
                     style={{ animationDelay: `${unit.lessons.length * 0.08}s` }}
                     onClick={(e) => { e.stopPropagation(); onStartTestOut(unit.id); }}
                   >
-                    <span className="text-lg">🏆</span> 승단 시험
+                    🏆 승단 시험으로 한번에 통과하기
                   </button>
                 )}
               </div>

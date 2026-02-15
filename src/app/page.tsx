@@ -266,7 +266,7 @@ export default function Home() {
             />
           )}
 
-          {lesson.learnScreen === 'guide' && lesson.testOutUnitId && lesson.activeUnit && (
+          {lesson.learnScreen === 'guide' && lesson.testOutUnitId !== null && lesson.activeUnit && (
             <div className="max-w-[400px] mx-auto mt-10 text-center">
               <div className="text-5xl mb-4 animate-emoji-bounce">🏆</div>
               <div className="text-2xl font-bold text-amber-400 mb-2 animate-slide-up">승단 시험</div>
@@ -298,7 +298,7 @@ export default function Home() {
             </div>
           )}
 
-          {lesson.learnScreen === 'guide' && !lesson.testOutUnitId && lesson.activeLesson && lesson.activeUnit && (
+          {lesson.learnScreen === 'guide' && lesson.testOutUnitId === null && lesson.activeLesson && lesson.activeUnit && (
             <GuideCard
               lesson={lesson.activeLesson}
               unitEmoji={lesson.activeUnit.emoji}
@@ -315,7 +315,7 @@ export default function Home() {
             />
           )}
 
-          {lesson.learnScreen === 'result' && lesson.lessonResult && (lesson.activeLessonId || lesson.testOutUnitId) && (
+          {lesson.learnScreen === 'result' && lesson.lessonResult && (lesson.activeLessonId || lesson.testOutUnitId !== null) && (
             <LessonResult
               passed={lesson.lessonResult.passed}
               correct={lesson.lessonResult.correct}
