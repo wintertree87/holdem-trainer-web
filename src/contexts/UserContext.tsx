@@ -30,26 +30,30 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     // 페이지 로드 시 UTM 캡처
     captureUtm()
 
-    void supabase.auth
-      .getUser()
-      .then(({ data: { user }, error }) => {
+    // 세션 먼저 확인 — 세션 없으면 getUser() 호출 자체를 생략 (AuthSessionMissingError 방지)
+    void supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return
+      if (!session) {
+        setUser(null)
+        setLoading(false)
+        return
+      }
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser()
         if (!mounted) return
         if (error) {
-          console.error('Failed to fetch auth user:', error)
           setUser(null)
-          return
+        } else {
+          setUser(user)
         }
-        setUser(user)
-      })
-      .catch((error) => {
+      } catch {
         if (!mounted) return
-        console.error('Unexpected auth user error:', error)
         setUser(null)
-      })
-      .finally(() => {
+      } finally {
         if (!mounted) return
         setLoading(false)
-      })
+      }
+    })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
