@@ -49,7 +49,7 @@ export default function Home() {
   const { todayCount, increment, isComplete, percentage } = useDailyGoal();
   const { notes, addNote, clearNotes } = useWrongNotes();
   const { muted, toggleMute, playLevelUp } = useSound();
-  const { currentStreak, bestStreak, weekDays } = useStreak(todayCount);
+  const { currentStreak, bestStreak, weekDays, justCheckedIn } = useStreak(todayCount);
 
   const lesson = useLessonFlow({ progress, updateLesson, addXP });
   const game = useGameSession();
@@ -248,7 +248,7 @@ export default function Home() {
       <XPBar currentLevel={currentLevel} nextLevel={nextLevel} totalXP={totalXP} progressPct={progressPct} />
 
       {/* Daily Goal */}
-      <DailyGoal todayCount={todayCount} isComplete={isComplete} percentage={percentage} streak={currentStreak} />
+      <DailyGoal todayCount={todayCount} isComplete={isComplete} percentage={percentage} streak={currentStreak} justCheckedIn={justCheckedIn} />
 
       {/* Tab Bar */}
       <TabBar activeTab={activeTab} onSwitch={setActiveTab} />
@@ -311,7 +311,10 @@ export default function Home() {
           {lesson.learnScreen === 'quiz' && lesson.lessonState && (
             <LessonQuiz
               lessonState={lesson.lessonState}
-              onAnswer={lesson.handleAnswer}
+              onAnswer={(isCorrect) => {
+                lesson.handleAnswer(isCorrect);
+                increment();
+              }}
               onNext={lesson.handleNext}
               onAbort={lesson.abortLesson}
             />

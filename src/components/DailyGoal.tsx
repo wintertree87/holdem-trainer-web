@@ -8,12 +8,16 @@ type Props = {
   isComplete: boolean;
   percentage: number;
   streak?: number;
+  justCheckedIn?: boolean;
 };
 
-export default function DailyGoal({ todayCount, isComplete, percentage, streak }: Props) {
+export default function DailyGoal({ todayCount, isComplete, percentage, streak, justCheckedIn }: Props) {
   const [justCompleted, setJustCompleted] = useState(false);
+  const [showCheckin, setShowCheckin] = useState(false);
   const prevComplete = useRef(isComplete);
+  const prevCount = useRef(todayCount);
 
+  // 일일 목표 달성 축하
   useEffect(() => {
     if (isComplete && !prevComplete.current) {
       setJustCompleted(true);
@@ -24,11 +28,26 @@ export default function DailyGoal({ todayCount, isComplete, percentage, streak }
     prevComplete.current = isComplete;
   }, [isComplete]);
 
+  // 오늘 첫 출석 축하 (todayCount가 0→1로 변하는 순간)
+  useEffect(() => {
+    if (todayCount === 1 && prevCount.current === 0) {
+      setShowCheckin(true);
+      const timer = setTimeout(() => setShowCheckin(false), 4000);
+      prevCount.current = todayCount;
+      return () => clearTimeout(timer);
+    }
+    prevCount.current = todayCount;
+  }, [todayCount]);
+
   const barColor = isComplete
     ? 'bg-amber-400'
     : percentage >= 50
       ? 'bg-green-500'
       : 'bg-amber-500';
+
+  const streakMsg = streak && streak >= 2
+    ? `🔥 ${streak}일 연속! 내일도 이어가요!`
+    : '🔥 오늘 출석 완료! 내일도 와서 연속 기록을 만들어요!';
 
   return (
     <>
@@ -49,6 +68,15 @@ export default function DailyGoal({ todayCount, isComplete, percentage, streak }
           </span>
         )}
       </div>
+
+      {/* 오늘 첫 출석 축하 */}
+      {showCheckin && !isComplete && (
+        <div className="text-center py-2 bg-orange-400/10 border border-orange-400/20 rounded-lg mb-2.5 text-sm text-orange-400 animate-confetti-pop">
+          {streakMsg}
+        </div>
+      )}
+
+      {/* 일일 목표 달성 */}
       {isComplete && (
         <div className={`text-center py-2 bg-green-400/10 border border-green-400/20 rounded-lg mb-2.5 text-sm text-green-400 ${justCompleted ? 'animate-confetti-pop' : ''}`}>
           {justCompleted ? '🎉 ' : '✅ '}오늘 목표 달성! 대단해요!
