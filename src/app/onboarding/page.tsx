@@ -48,11 +48,20 @@ export default function OnboardingPage() {
   const handleNext = useCallback(() => {
     const nextIndex = currentIndex + 1;
     if (nextIndex >= SCENARIOS.length) {
+      // 로그인 후 온보딩에서 사용할 퀴즈 결과 저장
+      const finalCorrect = correctCount;
+      const finalWrong = wrongCount;
+      localStorage.setItem('onboarding_quiz_result', JSON.stringify({
+        lessonId: '0-1',
+        correctCount: finalCorrect,
+        wrongCount: finalWrong,
+        timestamp: Date.now(),
+      }));
       setStep('result');
     } else {
       setCurrentIndex(nextIndex);
     }
-  }, [currentIndex]);
+  }, [currentIndex, correctCount, wrongCount]);
 
   const handleAbort = useCallback(() => {
     setStep('welcome');

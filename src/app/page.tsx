@@ -13,6 +13,7 @@ import { useGameSession, type MatchResult } from '@/hooks/useGameSession';
 import { type GameTier } from '@/data/game-config';
 import { createClient } from '@/lib/supabase-browser';
 
+import PostLoginOnboarding from '@/components/PostLoginOnboarding';
 import TabBar, { type Tab } from '@/components/TabBar';
 import XPBar from '@/components/XPBar';
 import DailyGoal from '@/components/DailyGoal';
@@ -49,6 +50,25 @@ export default function Home() {
 
   const lesson = useLessonFlow({ progress, updateLesson, addXP });
   const game = useGameSession();
+
+  // Post-login onboarding state
+  const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) { setOnboardingCompleted(null); return; }
+    const supabase = createClient();
+    supabase.from('profiles').select('onboarding_completed').eq('id', user.id).single()
+      .then(({ data }) => {
+        setOnboardingCompleted(data?.onboarding_completed ?? false);
+      });
+  }, [user]);
+
+  const markOnboardingCompleted = useCallback(async () => {
+    if (!user) return;
+    const supabase = createClient();
+    await supabase.from('profiles').update({ onboarding_completed: true }).eq('id', user.id);
+    setOnboardingCompleted(true);
+  }, [user]);
 
   // Tab state
   const [activeTab, setActiveTab] = useState<Tab>('learn');
@@ -147,11 +167,27 @@ export default function Home() {
   }, [user, lesson.learnScreen, lesson.backToTree, game.match, game.matchResult, game.endMatch, handleEndMatch]);
 
   // Loading
-  if (userLoading || progressLoading) {
+  if (userLoading || progressLoading || (user && onboardingCompleted === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-500 text-sm">로딩 중...</div>
       </div>
+    );
+  }
+
+  // Post-login onboarding (신규 유저)
+  if (user && onboardingCompleted === false) {
+    return (
+      <PostLoginOnboarding
+        onComplete={(startLessonId) => {
+          if (startLessonId) {
+            lesson.startLesson(startLessonId);
+          }
+        }}
+        addXP={addXP}
+        updateLesson={(lessonId, data) => updateLesson(lessonId, data)}
+        markOnboardingCompleted={markOnboardingCompleted}
+      />
     );
   }
 
