@@ -61,10 +61,10 @@ export const SKILL_TREE: Unit[] = [
         guideTip: '어떤 패가 강한지 알아야 게임을 할 수 있어요.\n원페어 < 투페어 < 트리플 < 스트레이트 < 플러시 순서예요.\n만들기 어려운 패일수록 강해요!',
         scenarios: [
           { question: '같은 숫자 2장이 있으면?', options: ['원페어', '투페어', '트리플'], answer: '원페어', explanation: '원페어예요! 예: K♠ K♥. 가장 흔하게 만들어지는 패죠.' },
-          { question: '원페어와 투페어 중 뭐가 더 강하나요?', options: ['원페어', '투페어'], answer: '투페어', explanation: '투페어가 더 강해요. 만들기가 더 어려우니까요.' },
+          { question: '원페어와 투페어 중 어느 쪽이 이길 확률이 높나요?', options: ['원페어', '투페어'], answer: '투페어', explanation: '투페어가 이길 확률이 더 높아요. 만들기가 더 어려우니까요.' },
           { question: '숫자가 연속 5개면? (예: 5-6-7-8-9)', options: ['스트레이트', '플러시'], answer: '스트레이트', explanation: '스트레이트! 숫자 5개가 계단처럼 이어지는 거예요.' },
           { question: '같은 무늬 5장이면?', options: ['스트레이트', '플러시'], answer: '플러시', explanation: '플러시! 하트 5장, 스페이드 5장처럼 무늬가 같으면 돼요.' },
-          { question: '스트레이트와 플러시 중 뭐가 더 강하나요?', options: ['스트레이트', '플러시'], answer: '플러시', explanation: '플러시가 더 강해요. 같은 무늬 5장이 더 만들기 어렵거든요.' }
+          { question: '스트레이트와 플러시 중 어느 쪽이 이길 확률이 높나요?', options: ['스트레이트', '플러시'], answer: '플러시', explanation: '플러시가 이길 확률이 더 높아요. 같은 무늬 5장이 더 만들기 어렵거든요.' }
         ]
       },
       {
@@ -100,11 +100,11 @@ export const SKILL_TREE: Unit[] = [
         guideTip: '모든 패는 평등하지 않아요.\nAA(에이스 페어)가 가장 강하고, 72(7-2 다른무늬)가 가장 약해요.\n기본 순서: 높은 페어 > 높은 카드 같은무늬 > 높은 카드 다른무늬 > 낮은 페어',
         scenarios: [
           // OX 퀵 퀴즈 (워밍업)
-          { question: 'AA(에이스 페어)는 홀덤에서 가장 강한 시작 패다', options: ['O', 'X'], answer: 'O', explanation: '맞아요! AA는 모든 패를 상대로 유리한 최강 패예요.' },
-          { question: '같은 무늬(예: AKs)가 다른 무늬(AKo)보다 항상 강하다', options: ['O', 'X'], answer: 'O', explanation: '맞아요! 같은 무늬는 플러시 가능성이 있어서 약 3% 더 유리해요.' },
+          { question: 'AA(에이스 페어)는 홀덤에서 이길 확률이 가장 높은 시작 패다', options: ['O', 'X'], answer: 'O', explanation: '맞아요! AA는 모든 패를 상대로 유리한 최강 패예요.' },
+          { question: '같은 무늬(예: AKs)가 다른 무늬(AKo)보다 항상 이길 확률이 높다', options: ['O', 'X'], answer: 'O', explanation: '맞아요! 같은 무늬는 플러시 가능성이 있어서 약 3% 더 유리해요.' },
           // 비교 선택형
           { question: 'QQ와 AKs 중 올인하면 누가 유리할까?', options: ['QQ가 약간 유리', 'AKs가 약간 유리', '완전 동등'], answer: 'QQ가 약간 유리', explanation: 'QQ는 이미 페어가 완성된 상태! AKs는 A나 K를 맞춰야 해서 QQ가 약 55:45로 유리해요.' },
-          { question: '다음 중 가장 강한 시작 패는?', options: ['AA','AKs','KK','QQ'], answer: 'AA', explanation: 'AA는 프리플랍 최강! 어떤 패를 만나도 제일 유리해요.' },
+          { question: '다음 중 이길 확률이 가장 높은 시작 패는?', options: ['AA','AKs','KK','QQ'], answer: 'AA', explanation: 'AA는 프리플랍 최강! 어떤 패를 만나도 제일 유리해요.' },
           { question: '다음 중 가장 약한 패는?', options: ['72o','32s','J3o','95o'], answer: '72o', explanation: '72o는 홀덤에서 가장 약한 패로 유명해요. 숫자가 연결도 안 되고 높은 카드도 없죠.' },
           { question: 'AKs와 AKo의 차이는?', options: ['AKs가 더 강하다','AKo가 더 강하다','완전히 같다'], answer: 'AKs가 더 강하다', explanation: '같은 무늬(s)는 플러시 가능성이 있어서 약 3% 더 자주 이겨요.' },
           { question: '99와 AQo 중 올인하면 누가 유리?', options: ['99가 약간 유리','AQo가 약간 유리','완전 동등'], answer: '99가 약간 유리', explanation: '페어는 이미 완성된 패! 높은 카드 2장과의 대결에서 약 55:45로 유리해요.' }

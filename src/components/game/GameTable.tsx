@@ -99,12 +99,13 @@ function BetChips({ amount, side }: { amount: number; side: 'top' | 'bottom' }) 
 }
 
 // ─── Player Info Bar ───
-function PlayerInfo({ label, emoji, position, stack, isBtn }: {
+function PlayerInfo({ label, emoji, position, stack, isBtn, isHero }: {
   label: string;
   emoji: string;
   position: string;
   stack: number;
   isBtn: boolean;
+  isHero: boolean;
 }) {
   const stackColor = stack > STARTING_STACK
     ? 'text-green-400'
@@ -112,8 +113,12 @@ function PlayerInfo({ label, emoji, position, stack, isBtn }: {
     ? 'text-red-400'
     : 'text-white';
 
+  const bgClass = isHero
+    ? 'bg-yellow-500/10 border border-yellow-500/20'
+    : 'bg-red-500/10 border border-red-500/20';
+
   return (
-    <div className="w-full max-w-[400px] bg-white/5 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center justify-between">
+    <div className={`w-full max-w-[400px] backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center justify-between ${bgClass}`}>
       <div className="flex items-center gap-2">
         <span className="text-sm">{emoji}</span>
         <span className="text-sm text-gray-300 font-medium">{label}</span>
@@ -150,19 +155,19 @@ function Seat({ pos, heroPos, botPos, isActive }: {
       )}
       <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${
         isHero
-          ? 'bg-gradient-to-b from-yellow-500/30 to-yellow-700/20 border-yellow-400 shadow-[0_0_14px_rgba(234,179,8,0.3)]'
+          ? 'bg-gradient-to-b from-yellow-500/30 to-yellow-700/20 border-yellow-400 shadow-[0_0_18px_rgba(234,179,8,0.4)]'
           : isBot
-          ? 'bg-gradient-to-b from-red-500/30 to-red-700/20 border-red-400 shadow-[0_0_14px_rgba(239,68,68,0.3)]'
-          : 'bg-transparent border-dashed border-gray-700/40'
+          ? 'bg-gradient-to-b from-red-500/30 to-red-700/20 border-red-400 shadow-[0_0_18px_rgba(239,68,68,0.4)]'
+          : 'bg-transparent border-dashed border-gray-700/20 opacity-30'
       }`}>
         {isHero ? (
-          <span className="text-yellow-300 text-[12px] font-bold">나</span>
+          <span className="text-yellow-300 text-[13px] font-black">나</span>
         ) : isBot ? (
-          <span className="text-[14px]">🤖</span>
+          <span className="text-[16px]">🤖</span>
         ) : null}
       </div>
       <div className={`text-[9px] font-bold mt-0.5 ${
-        isHero ? 'text-yellow-400' : isBot ? 'text-red-400' : 'text-gray-700'
+        isHero ? 'text-yellow-400' : isBot ? 'text-red-400' : 'text-gray-700/30'
       }`}>
         {pos}
       </div>
@@ -309,6 +314,7 @@ export default function GameTable({ match, showResult, onHeroAction, onShowResul
           position={botPosition}
           stack={hand.bets.botStack}
           isBtn={botPosition === 'BTN'}
+          isHero={false}
         />
 
         {/* Bot's cards */}
@@ -396,11 +402,15 @@ export default function GameTable({ match, showResult, onHeroAction, onShowResul
           position={heroPosition}
           stack={hand.bets.heroStack}
           isBtn={heroPosition === 'BTN'}
+          isHero={true}
         />
       </div>
 
       {/* ─── Action buttons ─── */}
-      <div className="pb-4 pt-2">
+      <div className={`pb-4 pt-2 ${actionsEnabled ? 'bg-yellow-500/5 rounded-t-2xl' : ''}`}>
+        {actionsEnabled && (
+          <div className="text-center text-[11px] text-yellow-400/70 font-medium mb-1">내 차례</div>
+        )}
         <GameActions
           actions={heroActions}
           pot={hand.bets.pot}

@@ -51,7 +51,7 @@ export default function GameActions({ actions, pot, heroStack, callAmount, onAct
   if (disabled || actions.length === 0) {
     return (
       <div className="flex items-center justify-center h-12">
-        <div className="text-gray-600 text-sm animate-pulse">상대 턴...</div>
+        <div className="text-gray-600 text-sm animate-pulse">🤖 상대가 생각 중...</div>
       </div>
     );
   }

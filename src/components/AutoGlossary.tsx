@@ -7,7 +7,7 @@ import { GLOSSARY, GLOSSARY_MAP } from '@/data/glossary';
 // Collect all short keys that should be auto-detected
 // Exclude very basic terms that appear everywhere (would be too noisy)
 const SKIP_AUTO = new Set([
-  '폴드', '콜', '레이즈', '밸류', '블러프', '드로우',
+  '밸류', '블러프', '드로우',
   '프리플랍', '포스트플랍', '에어',
 ]);
 
