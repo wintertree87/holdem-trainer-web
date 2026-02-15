@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { SKILL_TREE } from '@/data/skill-tree';
 import type { LessonData } from '@/hooks/useProgress';
+import type { WeekDay } from '@/hooks/useStreak';
 
 type Props = {
   onClose: () => void;
@@ -15,14 +16,12 @@ type Props = {
   // Streak
   currentStreak: number;
   bestStreak: number;
-  weekDays: boolean[]; // 최근 7일 (월→일)
+  weekDays: WeekDay[];
   // 학습 진행
   progress: Record<string, LessonData>;
   // 모의게임
   gameStats: { wins: number; losses: number; ties: number; totalBbWon: number };
 };
-
-const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 
 export default function ProfileOverlay({
   onClose, onSignOut, email, nickname,
@@ -52,10 +51,9 @@ export default function ProfileOverlay({
   ).length;
 
   // 정답률 (lesson progress 기반)
-  const totalAttempts = Object.values(progress).reduce((s, p) => s + p.attempts, 0);
-  const avgAccuracy = totalAttempts > 0
-    ? Math.round(Object.values(progress).filter(p => p.bestAccuracy > 0).reduce((s, p) => s + p.bestAccuracy, 0)
-      / Object.values(progress).filter(p => p.bestAccuracy > 0).length)
+  const withAccuracy = Object.values(progress).filter(p => p.bestAccuracy > 0);
+  const avgAccuracy = withAccuracy.length > 0
+    ? Math.round(withAccuracy.reduce((s, p) => s + p.bestAccuracy, 0) / withAccuracy.length)
     : 0;
 
   // 모의게임 전적
@@ -129,18 +127,18 @@ export default function ProfileOverlay({
             </div>
           )}
 
-          {/* 이번 주 활동 */}
+          {/* 최근 7일 활동 */}
           <div className="bg-white/5 rounded-xl p-4">
-            <div className="text-xs text-gray-400 font-bold mb-3">📅 이번 주 활동</div>
+            <div className="text-xs text-gray-400 font-bold mb-3">📅 최근 7일 활동</div>
             <div className="flex justify-center gap-3">
-              {weekDays.map((done, i) => (
+              {weekDays.map((day, i) => (
                 <div key={i} className="flex flex-col items-center gap-1">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${
-                    done ? 'bg-green-500/30 text-green-400' : 'bg-white/5 text-gray-600'
+                    day.done ? 'bg-green-500/30 text-green-400' : 'bg-white/5 text-gray-600'
                   }`}>
-                    {done ? '●' : '○'}
+                    {day.done ? '●' : '○'}
                   </div>
-                  <span className="text-[10px] text-gray-500">{DAY_LABELS[i]}</span>
+                  <span className="text-[10px] text-gray-500">{day.label}</span>
                 </div>
               ))}
             </div>
