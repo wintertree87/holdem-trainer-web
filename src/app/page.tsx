@@ -33,6 +33,7 @@ import FeedbackModal from '@/components/modals/FeedbackModal';
 import LevelUpOverlay from '@/components/LevelUpOverlay';
 import ProfileOverlay from '@/components/ProfileOverlay';
 import DeleteAccountDialog from '@/components/modals/DeleteAccountDialog';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import GameTab from '@/components/game/GameTab';
 import GameTable from '@/components/game/GameTable';
 import MatchSummary from '@/components/game/MatchSummary';
@@ -460,6 +461,9 @@ export default function Home() {
           onDeleted={() => { window.location.href = '/onboarding'; }}
         />
       )}
+
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 }

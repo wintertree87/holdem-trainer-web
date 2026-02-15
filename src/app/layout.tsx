@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { Providers } from "./providers";
@@ -7,6 +7,10 @@ import "./globals.css";
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 
 const siteUrl = "https://holdem-trainer-web-yy8p.vercel.app";
+
+export const viewport: Viewport = {
+  themeColor: "#1a1a2e",
+};
 
 export const metadata: Metadata = {
   title: {
