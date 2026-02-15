@@ -97,7 +97,7 @@ export function useLessonFlow({ progress, updateLesson, addXP }: UseLessonFlowPa
   }, []);
 
   const beginQuiz = useCallback(() => {
-    if (testOutUnitId) {
+    if (testOutUnitId !== null) {
       const scenarios = generateTestOutScenarios(testOutUnitId);
       setLessonState({
         scenarios,

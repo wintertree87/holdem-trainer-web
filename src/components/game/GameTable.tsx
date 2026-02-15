@@ -282,9 +282,14 @@ export default function GameTable({ match, showResult, onHeroAction, onShowResul
         <button onClick={onQuit} className="text-xs text-gray-500 hover:text-gray-300 transition">
           ← 나가기
         </button>
-        <div className="text-xs text-gray-400">
-          <span className="font-bold text-gray-300">핸드 {match.handNumber}</span>
-          <span className="text-gray-600"> / 10</span>
+        <div className="text-xs text-gray-400 text-center">
+          <div>
+            <span className="font-bold text-gray-300">핸드 {match.handNumber}</span>
+            <span className="text-gray-600"> / 10</span>
+          </div>
+          <div className="text-[10px] text-gray-500">
+            유효스택 {fmt(Math.min(match.heroStack, match.botStack))}
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-sm">{match.tier.emoji}</span>
