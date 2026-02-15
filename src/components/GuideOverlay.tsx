@@ -19,17 +19,32 @@ const GUIDE_LABELS: { level: GuideLevel; label: string; color: string }[] = [
   { level: 'reference', label: '확률표', color: 'bg-blue-500' },
 ];
 
-type Props = {
-  onClose: () => void;
+// 해금 조건: 유닛 진행도 기반
+const UNLOCK_REQUIREMENTS: Record<GuideLevel, { unitIds: number[]; label: string } | null> = {
+  beginner: null, // 항상 열림
+  intermediate: { unitIds: [0, 1, 2], label: '기초 그룹 완료 후 해금' },
+  advanced: { unitIds: [0, 1, 2, 3, 4, 5, 6, 7], label: '프리플랍 그룹 완료 후 해금' },
+  reference: { unitIds: [8], label: '"숫자의 힘" 유닛 완료 후 해금' },
 };
 
-export default function GuideOverlay({ onClose }: Props) {
+type Props = {
+  onClose: () => void;
+  getUnitStatus: (unitId: number) => 'locked' | 'current' | 'completed';
+};
+
+export default function GuideOverlay({ onClose, getUnitStatus }: Props) {
   const [currentLevel, setCurrentLevel] = useState<GuideLevel>('beginner');
   const [html, setHtml] = useState('');
   const [loading, setLoading] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const cache = useRef<Record<string, string>>({});
+
+  const isLevelUnlocked = useCallback((level: GuideLevel): boolean => {
+    const req = UNLOCK_REQUIREMENTS[level];
+    if (!req) return true;
+    return req.unitIds.every(id => getUnitStatus(id) === 'completed');
+  }, [getUnitStatus]);
 
   const loadContent = useCallback(async (level: GuideLevel) => {
     if (cache.current[level]) {
@@ -51,8 +66,10 @@ export default function GuideOverlay({ onClose }: Props) {
   }, []);
 
   useEffect(() => {
-    loadContent(currentLevel);
-  }, [currentLevel, loadContent]);
+    if (isLevelUnlocked(currentLevel)) {
+      loadContent(currentLevel);
+    }
+  }, [currentLevel, loadContent, isLevelUnlocked]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -78,9 +95,12 @@ export default function GuideOverlay({ onClose }: Props) {
   };
 
   const switchLevel = (level: GuideLevel) => {
+    if (!isLevelUnlocked(level)) return;
     setCurrentLevel(level);
     bodyRef.current?.scrollTo({ top: 0 });
   };
+
+  const locked = !isLevelUnlocked(currentLevel);
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0f1117] flex flex-col">
@@ -91,25 +111,46 @@ export default function GuideOverlay({ onClose }: Props) {
         </button>
         <span className="font-bold text-gray-200 text-sm">공략집</span>
         <div className="flex gap-1.5 ml-auto">
-          {GUIDE_LABELS.map(({ level, label, color }) => (
-            <button
-              key={level}
-              onClick={() => switchLevel(level)}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
-                currentLevel === level ? 'bg-white/15 text-white' : 'text-gray-500 hover:text-gray-300'
-              }`}
-            >
-              <span className={`w-2 h-2 rounded-full ${color}`} />
-              {label}
-            </button>
-          ))}
+          {GUIDE_LABELS.map(({ level, label, color }) => {
+            const unlocked = isLevelUnlocked(level);
+            return (
+              <button
+                key={level}
+                onClick={() => switchLevel(level)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition ${
+                  !unlocked
+                    ? 'text-gray-600 cursor-not-allowed opacity-50'
+                    : currentLevel === level
+                      ? 'bg-white/15 text-white cursor-pointer'
+                      : 'text-gray-500 hover:text-gray-300 cursor-pointer'
+                }`}
+              >
+                {unlocked ? (
+                  <span className={`w-2 h-2 rounded-full ${color}`} />
+                ) : (
+                  <span className="text-[10px]">🔒</span>
+                )}
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Body */}
       <div ref={bodyRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-5 py-8">
         <div className="max-w-[640px] mx-auto">
-          {loading ? (
+          {locked ? (
+            <div className="text-center py-20">
+              <div className="text-5xl mb-4">🔒</div>
+              <p className="text-gray-400 text-sm">
+                {UNLOCK_REQUIREMENTS[currentLevel]?.label}
+              </p>
+              <p className="text-gray-600 text-xs mt-2">
+                스킬 트리에서 해당 유닛을 클리어하면 열려요!
+              </p>
+            </div>
+          ) : loading ? (
             <p className="text-center text-gray-500 py-10">로딩 중...</p>
           ) : (
             <article
@@ -121,7 +162,7 @@ export default function GuideOverlay({ onClose }: Props) {
       </div>
 
       {/* Scroll to top */}
-      {showScrollTop && (
+      {showScrollTop && !locked && (
         <button
           onClick={scrollToTop}
           className="fixed bottom-6 right-6 w-10 h-10 bg-indigo-500 rounded-full text-white font-bold shadow-lg hover:bg-indigo-600 transition cursor-pointer"

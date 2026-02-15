@@ -8,6 +8,7 @@ import { useStats } from '@/hooks/useStats';
 import { useDailyGoal } from '@/hooks/useDailyGoal';
 import { useWrongNotes } from '@/hooks/useWrongNotes';
 import { useSound } from '@/hooks/useSound';
+import { useStreak } from '@/hooks/useStreak';
 import { useLessonFlow } from '@/hooks/useLessonFlow';
 import { useGameSession, type MatchResult } from '@/hooks/useGameSession';
 import { type GameTier } from '@/data/game-config';
@@ -27,6 +28,7 @@ import WrongNotesModal from '@/components/modals/WrongNotesModal';
 import GlossaryModal from '@/components/modals/GlossaryModal';
 import FeedbackModal from '@/components/modals/FeedbackModal';
 import LevelUpOverlay from '@/components/LevelUpOverlay';
+import ProfileOverlay from '@/components/ProfileOverlay';
 import GameTab from '@/components/game/GameTab';
 import GameTable from '@/components/game/GameTable';
 import MatchSummary from '@/components/game/MatchSummary';
@@ -47,6 +49,7 @@ export default function Home() {
   const { todayCount, increment, isComplete, percentage } = useDailyGoal();
   const { notes, addNote, clearNotes } = useWrongNotes();
   const { muted, toggleMute, playLevelUp } = useSound();
+  const { currentStreak, bestStreak, weekDays } = useStreak();
 
   const lesson = useLessonFlow({ progress, updateLesson, addXP });
   const game = useGameSession();
@@ -79,6 +82,7 @@ export default function Home() {
 
   // Modals
   const [showGuide, setShowGuide] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [showWrongNotes, setShowWrongNotes] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -235,9 +239,7 @@ export default function Home() {
           <button onClick={() => setShowGuide(true)} className="text-lg" title="공략집">📚</button>
           <button onClick={() => setShowGlossary(true)} className="text-lg" title="용어사전">📖</button>
           {user && (
-            <button onClick={signOut} className="text-xs text-gray-500 hover:text-gray-300 ml-1">
-              로그아웃
-            </button>
+            <button onClick={() => setShowProfile(true)} className="text-lg" title="마이페이지">👤</button>
           )}
         </div>
       </div>
@@ -246,7 +248,7 @@ export default function Home() {
       <XPBar currentLevel={currentLevel} nextLevel={nextLevel} totalXP={totalXP} progressPct={progressPct} />
 
       {/* Daily Goal */}
-      <DailyGoal todayCount={todayCount} isComplete={isComplete} percentage={percentage} />
+      <DailyGoal todayCount={todayCount} isComplete={isComplete} percentage={percentage} streak={currentStreak} />
 
       {/* Tab Bar */}
       <TabBar activeTab={activeTab} onSwitch={setActiveTab} />
@@ -327,7 +329,7 @@ export default function Home() {
               onStartLesson={lesson.startLesson}
               onBackToTree={lesson.backToTree}
               isLessonUnlocked={lesson.isLessonUnlocked}
-              isTestOut={!!lesson.testOutUnitId}
+              isTestOut={lesson.testOutUnitId !== null}
             />
           )}
         </>
@@ -374,8 +376,33 @@ export default function Home() {
         />
       )}
 
+      {/* Profile Overlay */}
+      {showProfile && user && (
+        <ProfileOverlay
+          onClose={() => setShowProfile(false)}
+          onSignOut={signOut}
+          email={user.email || ''}
+          nickname={user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || '유저'}
+          totalXP={totalXP}
+          currentLevel={currentLevel}
+          currentStreak={currentStreak}
+          bestStreak={bestStreak}
+          weekDays={weekDays}
+          progress={progress}
+          gameStats={gameStats.reduce(
+            (acc, s) => ({
+              wins: acc.wins + s.wins,
+              losses: acc.losses + s.losses,
+              ties: acc.ties + s.ties,
+              totalBbWon: acc.totalBbWon + s.totalBbWon,
+            }),
+            { wins: 0, losses: 0, ties: 0, totalBbWon: 0 }
+          )}
+        />
+      )}
+
       {/* Guide Overlay */}
-      {showGuide && <GuideOverlay onClose={() => setShowGuide(false)} />}
+      {showGuide && <GuideOverlay onClose={() => setShowGuide(false)} getUnitStatus={lesson.getUnitStatus} />}
 
       {/* Wrong Notes Modal */}
       {showWrongNotes && (

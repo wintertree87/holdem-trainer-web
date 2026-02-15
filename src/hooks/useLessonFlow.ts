@@ -166,7 +166,7 @@ export function useLessonFlow({ progress, updateLesson, addXP }: UseLessonFlowPa
 
         let xpEarned = 0;
 
-        if (testOutUnitId && passed) {
+        if (testOutUnitId !== null && passed) {
           const unit = SKILL_TREE.find(u => u.id === testOutUnitId);
           if (unit) {
             const today = new Date().toISOString().slice(0, 10);

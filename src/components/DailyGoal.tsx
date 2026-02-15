@@ -7,9 +7,10 @@ type Props = {
   todayCount: number;
   isComplete: boolean;
   percentage: number;
+  streak?: number;
 };
 
-export default function DailyGoal({ todayCount, isComplete, percentage }: Props) {
+export default function DailyGoal({ todayCount, isComplete, percentage, streak }: Props) {
   const [justCompleted, setJustCompleted] = useState(false);
   const prevComplete = useRef(isComplete);
 
@@ -42,6 +43,11 @@ export default function DailyGoal({ todayCount, isComplete, percentage }: Props)
         <span className={`text-sm font-bold whitespace-nowrap transition-colors ${isComplete ? 'text-amber-400' : 'text-amber-500'}`}>
           {todayCount}/{DAILY_GOAL}
         </span>
+        {streak !== undefined && streak >= 2 && (
+          <span className="text-xs font-bold text-orange-400 whitespace-nowrap">
+            🔥 {streak}일
+          </span>
+        )}
       </div>
       {isComplete && (
         <div className={`text-center py-2 bg-green-400/10 border border-green-400/20 rounded-lg mb-2.5 text-sm text-green-400 ${justCompleted ? 'animate-confetti-pop' : ''}`}>
