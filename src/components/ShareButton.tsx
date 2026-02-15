@@ -11,25 +11,24 @@ type Props = {
 export default function ShareButton({ text, url }: Props) {
   const [copied, setCopied] = useState(false);
 
-  const handleShare = async () => {
-    const shareData = { text, url };
+  const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
 
-    if (navigator.share) {
+  const handleShare = async () => {
+    if (isMobile && navigator.share) {
       try {
-        await navigator.share(shareData);
+        await navigator.share({ text, url });
       } catch {
-        // user cancelled — do nothing
+        // user cancelled
       }
       return;
     }
 
-    // Desktop fallback: clipboard
     try {
       await navigator.clipboard.writeText(`${text}\n${url}`);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      // clipboard blocked — do nothing
+      // clipboard blocked
     }
   };
 
