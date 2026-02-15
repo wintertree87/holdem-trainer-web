@@ -9,17 +9,26 @@ type Props = {
 
 function CardDisplay({ card, delay = 0 }: { card: Card; delay?: number }) {
   const isRed = card.suit === '♥' || card.suit === '♦';
+  const color = isRed ? 'text-red-500' : 'text-gray-900';
   return (
     <div
-      className="w-11 h-16 bg-white rounded-lg flex flex-col items-center justify-center shadow-md animate-card-deal"
+      className="w-12 h-[68px] bg-gradient-to-b from-white to-gray-50 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.3)] animate-card-deal relative"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <span className={`text-base font-bold leading-none ${isRed ? 'text-red-500' : 'text-gray-900'}`}>
-        {card.rank}
-      </span>
-      <span className={`text-sm leading-none ${isRed ? 'text-red-500' : 'text-gray-900'}`}>
-        {card.suit}
-      </span>
+      {/* Top-left corner pip */}
+      <div className={`absolute top-1 left-1.5 flex flex-col items-center leading-none ${color}`}>
+        <span className="text-[10px] font-bold">{card.rank}</span>
+        <span className="text-[9px] -mt-0.5">{card.suit}</span>
+      </div>
+      {/* Center suit */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className={`text-xl ${color}`}>{card.suit}</span>
+      </div>
+      {/* Bottom-right corner pip (180° rotated) */}
+      <div className={`absolute bottom-1 right-1.5 flex flex-col items-center leading-none rotate-180 ${color}`}>
+        <span className="text-[10px] font-bold">{card.rank}</span>
+        <span className="text-[9px] -mt-0.5">{card.suit}</span>
+      </div>
     </div>
   );
 }
@@ -35,7 +44,7 @@ export default function CommunityCards({ cards, street }: Props) {
       ))}
       {/* Empty card slots */}
       {Array.from({ length: 5 - cards.length }).map((_, i) => (
-        <div key={`empty-${i}`} className="w-11 h-16 bg-white/5 rounded-lg border border-white/10" />
+        <div key={`empty-${i}`} className="w-12 h-[68px] bg-white/5 rounded-lg border border-white/10" />
       ))}
     </div>
   );
@@ -44,29 +53,44 @@ export default function CommunityCards({ cards, street }: Props) {
 export function HoleCards({ cards, faceDown = false }: { cards: Card[]; faceDown?: boolean }) {
   if (faceDown) {
     return (
-      <div className="flex gap-1">
-        <div className="w-10 h-14 bg-indigo-900 rounded-lg border border-indigo-700 flex items-center justify-center">
-          <span className="text-indigo-500 text-xs">?</span>
+      <div className="flex">
+        <div className="w-11 h-[62px] bg-gradient-to-br from-blue-700 to-blue-900 rounded-lg border border-blue-500/30 shadow-[0_2px_8px_rgba(0,0,0,0.3)] flex items-center justify-center -rotate-3">
+          <div className="w-7 h-10 rounded border border-blue-400/20 flex items-center justify-center">
+            <span className="text-blue-400/30 text-lg">♦</span>
+          </div>
         </div>
-        <div className="w-10 h-14 bg-indigo-900 rounded-lg border border-indigo-700 flex items-center justify-center">
-          <span className="text-indigo-500 text-xs">?</span>
+        <div className="w-11 h-[62px] bg-gradient-to-br from-blue-700 to-blue-900 rounded-lg border border-blue-500/30 shadow-[0_2px_8px_rgba(0,0,0,0.3)] flex items-center justify-center rotate-3 -ml-1">
+          <div className="w-7 h-10 rounded border border-blue-400/20 flex items-center justify-center">
+            <span className="text-blue-400/30 text-lg">♦</span>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex gap-1">
-      {cards.map(card => {
+    <div className="flex">
+      {cards.map((card, i) => {
         const isRed = card.suit === '♥' || card.suit === '♦';
+        const color = isRed ? 'text-red-500' : 'text-gray-900';
         return (
-          <div key={`${card.rank}${card.suit}`} className="w-10 h-14 bg-white rounded-lg flex flex-col items-center justify-center shadow-sm">
-            <span className={`text-sm font-bold leading-none ${isRed ? 'text-red-500' : 'text-gray-900'}`}>
-              {card.rank}
-            </span>
-            <span className={`text-xs leading-none ${isRed ? 'text-red-500' : 'text-gray-900'}`}>
-              {card.suit}
-            </span>
+          <div
+            key={`${card.rank}${card.suit}`}
+            className={`w-11 h-[62px] bg-gradient-to-b from-white to-gray-50 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.3)] relative ${
+              i === 0 ? '-rotate-3' : 'rotate-3 -ml-1'
+            }`}
+          >
+            <div className={`absolute top-0.5 left-1 flex flex-col items-center leading-none ${color}`}>
+              <span className="text-[9px] font-bold">{card.rank}</span>
+              <span className="text-[8px] -mt-0.5">{card.suit}</span>
+            </div>
+            <div className={`absolute inset-0 flex items-center justify-center ${color}`}>
+              <span className="text-lg">{card.suit}</span>
+            </div>
+            <div className={`absolute bottom-0.5 right-1 flex flex-col items-center leading-none rotate-180 ${color}`}>
+              <span className="text-[9px] font-bold">{card.rank}</span>
+              <span className="text-[8px] -mt-0.5">{card.suit}</span>
+            </div>
           </div>
         );
       })}
