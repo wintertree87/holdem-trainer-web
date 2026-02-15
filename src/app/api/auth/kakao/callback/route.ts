@@ -1,13 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * GET /api/auth/kakao/callback
  * Kakao redirects here with ?code=...
  * We exchange the code for an ID token, then use signInWithIdToken.
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const error = searchParams.get('error')
@@ -43,19 +42,21 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login`)
   }
 
-  // Create Supabase session using the ID token
-  const cookieStore = await cookies()
+  // Redirect response를 먼저 만들고, 쿠키를 이 response에 직접 심는다.
+  // cookies() + NextResponse.redirect() 조합은 쿠키가 누락될 수 있음.
+  const response = NextResponse.redirect(`${origin}/`)
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
+            response.cookies.set(name, value, options)
           )
         },
       },
@@ -73,5 +74,5 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login`)
   }
 
-  return NextResponse.redirect(`${origin}/`)
+  return response
 }
