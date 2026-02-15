@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase-browser';
 import { useUser } from './useUser';
 
 const MAX_HEARTS = 5;
-const RECOVERY_MS = 30 * 60 * 1000; // 30분
+const RECOVERY_MS = 15 * 60 * 1000; // 15분
 
 type HeartsRow = {
   hearts: number;
