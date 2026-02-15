@@ -8,6 +8,14 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 export const metadata: Metadata = {
   title: "홀덤 트레이너",
   description: "듀오링고 스타일 홀덤 프리플랍 학습",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "홀덤 트레이너",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
