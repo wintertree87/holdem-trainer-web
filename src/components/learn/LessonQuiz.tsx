@@ -165,9 +165,11 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
             />
           )}
 
-          <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
-            계속
-          </button>
+          <div className="text-center">
+            <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
+              계속
+            </button>
+          </div>
         </div>
       )}
     </div>
