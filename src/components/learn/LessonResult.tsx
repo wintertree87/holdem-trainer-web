@@ -67,12 +67,12 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
     : (passed ? (wrong === 0 ? '🌟' : '🎉') : '💔');
 
   const title = isTestOut
-    ? (passed ? '승단 시험 통과!' : '아쉽지만 불합격...')
+    ? (passed ? '승급 성공!' : '아쉽지만 다음에...')
     : (passed ? (wrong === 0 ? '퍼펙트!' : '레슨 완료!') : '다시 도전하세요!');
 
   const subtitle = isTestOut
-    ? (passed ? '유닛의 모든 레슨이 완료되었습니다' : '각 레슨을 학습하며 실력을 키워보세요')
-    : (!passed ? '괜찮아요! 실수에서 배우는 거예요. 다시 한번!' : null);
+    ? (passed ? '유닛의 모든 레슨이 완료되었습니다' : '한 판 한 판 경험을 쌓으면 돼요!')
+    : (!passed ? '아쉬운 판이었지만, 다음엔 더 잘할 수 있어요!' : null);
 
   return (
     <div className="max-w-[400px] mx-auto mt-10 text-center">

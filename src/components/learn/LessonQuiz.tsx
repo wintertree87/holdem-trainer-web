@@ -87,6 +87,19 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
     onNext();
   }, [onNext]);
 
+  // Auto-advance on correct answer after 1.5s
+  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (answered && isCorrect) {
+      autoAdvanceRef.current = setTimeout(() => {
+        handleNext();
+      }, 1500);
+      return () => {
+        if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+      };
+    }
+  }, [answered, isCorrect, handleNext]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (answered && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); handleNext(); }
@@ -160,7 +173,7 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
       {answered && (
         <div className={`animate-slide-up p-4 rounded-xl mt-4 ${isCorrect ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
           <div className={`text-base font-bold mb-1.5 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-            {isCorrect ? (combo >= 5 ? '🔥 연속 정답!' : combo >= 3 ? '🎯 연속 정답!' : '정답!') : '오답!'}
+            {isCorrect ? (combo >= 5 ? '🔥 On Fire!' : combo >= 3 ? '🎯 좋은 흐름!' : '나이스!') : '아쉬운 판단!'}
           </div>
           <div className="text-sm text-gray-300 leading-6"><AutoGlossary text={scenario.explanation || ''} /></div>
 
@@ -175,9 +188,15 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
           )}
 
           <div className="text-center">
-            <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
-              계속
-            </button>
+            {isCorrect ? (
+              <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500/50 rounded-lg text-white/70 text-sm font-bold transition">
+                자동 넘김...
+              </button>
+            ) : (
+              <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
+                계속
+              </button>
+            )}
           </div>
         </div>
       )}

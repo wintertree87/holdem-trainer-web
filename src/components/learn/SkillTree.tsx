@@ -110,7 +110,7 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
                     style={{ animationDelay: `${unit.lessons.length * 0.08}s` }}
                     onClick={(e) => { e.stopPropagation(); onStartTestOut(unit.id); }}
                   >
-                    🏆 승단 시험으로 한번에 통과하기
+                    🏆 승급전으로 한번에 통과하기
                   </button>
                 )}
               </div>

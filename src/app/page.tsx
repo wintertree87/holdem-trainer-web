@@ -37,6 +37,7 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import GameTab from '@/components/game/GameTab';
 import GameTable from '@/components/game/GameTable';
 import MatchSummary from '@/components/game/MatchSummary';
+import DailyHand from '@/components/DailyHand';
 
 type GameStats = {
   tier: string;
@@ -270,29 +271,32 @@ export default function Home() {
       {activeTab === 'learn' && (
         <>
           {lesson.learnScreen === 'tree' && (
-            <SkillTree
-              progress={progress}
-              openUnitId={lesson.openUnitId}
-              onToggleUnit={lesson.toggleUnit}
-              onStartLesson={lesson.startLesson}
-              onStartTestOut={lesson.startTestOut}
-              getUnitStatus={lesson.getUnitStatus}
-              isLessonUnlocked={lesson.isLessonUnlocked}
-            />
+            <>
+              <DailyHand userId={user?.id} />
+              <SkillTree
+                progress={progress}
+                openUnitId={lesson.openUnitId}
+                onToggleUnit={lesson.toggleUnit}
+                onStartLesson={lesson.startLesson}
+                onStartTestOut={lesson.startTestOut}
+                getUnitStatus={lesson.getUnitStatus}
+                isLessonUnlocked={lesson.isLessonUnlocked}
+              />
+            </>
           )}
 
           {lesson.learnScreen === 'guide' && lesson.testOutUnitId !== null && lesson.activeUnit && (
             <div className="max-w-[400px] mx-auto mt-10 text-center">
               <div className="text-5xl mb-4 animate-emoji-bounce">🏆</div>
-              <div className="text-2xl font-bold text-amber-400 mb-2 animate-slide-up">승단 시험</div>
+              <div className="text-2xl font-bold text-amber-400 mb-2 animate-slide-up">승급전</div>
               <div className="text-base font-bold text-gray-200 mb-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
                 {lesson.activeUnit.emoji} {lesson.activeUnit.title}
               </div>
               <div className="bg-white/5 rounded-xl p-5 mb-6 text-left animate-slide-up" style={{ animationDelay: '0.2s' }}>
                 <div className="text-sm text-gray-300 space-y-2">
-                  <p>이 시험을 통과하면 유닛의 <span className="text-amber-400 font-bold">모든 레슨이 완료</span>됩니다.</p>
+                  <p>승급전을 통과하면 유닛의 <span className="text-amber-400 font-bold">모든 레슨이 완료</span>됩니다.</p>
                   <p>• 총 <span className="font-bold text-white">10문제</span> 출제</p>
-                  <p>• <span className="font-bold text-white">80% 이상</span> 정답 시 통과 (오답 2개까지 허용)</p>
+                  <p>• <span className="font-bold text-white">80% 이상</span> 정답 시 승급 (오답 2개까지 허용)</p>
                   <p>• 유닛의 모든 레슨에서 혼합 출제됩니다</p>
                 </div>
               </div>
@@ -301,7 +305,7 @@ export default function Home() {
                   onClick={lesson.beginQuiz}
                   className="py-3.5 px-5 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition"
                 >
-                  시험 시작
+                  승급전 시작
                 </button>
                 <button
                   onClick={lesson.abortLesson}
@@ -318,6 +322,7 @@ export default function Home() {
               lesson={lesson.activeLesson}
               unitEmoji={lesson.activeUnit.emoji}
               onStart={lesson.beginQuiz}
+              isFirstAttempt={!progress[lesson.activeLessonId || '']?.attempts}
             />
           )}
 

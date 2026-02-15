@@ -2,14 +2,19 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { type GameTier, HANDS_PER_MATCH, STARTING_STACK, POSITION_MATCHUPS } from '@/data/game-config';
-import { type GameState, type GameResult, initHand, applyGameAction, getNextToAct, getHeroActions } from '@/engine/game-state';
+import { type GameState, type GameResult, type ActionRecord, initHand, applyGameAction, getNextToAct, getHeroActions } from '@/engine/game-state';
 import { type GameAction } from '@/engine/pot-manager';
+import { type Card } from '@/data/constants';
 import { decideBotAction } from '@/engine/bot-ai';
 
 export type HandRecord = {
   number: number;
   result: GameResult | null;
   heroStackChange: number;
+  heroHand?: Card[];
+  heroPosition?: string;
+  botPosition?: string;
+  preflopActions?: ActionRecord[];
 };
 
 export type MatchState = {
@@ -34,6 +39,7 @@ export type MatchResult = {
   losses: number;
   ties: number;
   bbWon: number;
+  history: HandRecord[];
 };
 
 function pickRandomPositions(): { heroPosition: string; botPosition: string } {
@@ -162,10 +168,16 @@ export function useGameSession() {
         newBotStack = prev.botStack;
       }
 
+      const preflopActions = prev.currentHand.actionHistory.filter(a => a.street === 'preflop');
+
       const record: HandRecord = {
         number: prev.handNumber,
         result,
         heroStackChange: newHeroStack - prev.heroStack,
+        heroHand: [...prev.currentHand.heroHand],
+        heroPosition: prev.heroPosition,
+        botPosition: prev.botPosition,
+        preflopActions,
       };
 
       const newHistory = [...prev.matchHistory, record];
@@ -188,6 +200,7 @@ export function useGameSession() {
           losses,
           ties,
           bbWon,
+          history: newHistory,
         });
 
         return {

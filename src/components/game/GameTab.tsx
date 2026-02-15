@@ -1,6 +1,7 @@
 'use client';
 
 import { GAME_TIERS, type GameTier } from '@/data/game-config';
+import { SKILL_TREE } from '@/data/skill-tree';
 
 type GameStats = {
   tier: string;
@@ -45,11 +46,30 @@ export default function GameTab({ getUnitStatus, onStartMatch, gameStats }: Prop
                   <div className="text-xs text-gray-500">{tier.description}</div>
                 </div>
               </div>
-              {!unlocked && (
-                <div className="text-xs text-gray-600 bg-white/5 px-2 py-1 rounded">
-                  🔒 유닛 {tier.unlockUnitId} 완료 필요
-                </div>
-              )}
+              {!unlocked && (() => {
+                const unlockUnit = SKILL_TREE.find(u => u.id === tier.unlockUnitId);
+                const requiredUnits = SKILL_TREE.filter(u => u.id <= tier.unlockUnitId);
+                const completedCount = requiredUnits.filter(u => getUnitStatus(u.id) === 'completed').length;
+                const total = requiredUnits.length;
+                const pct = Math.round((completedCount / total) * 100);
+
+                return (
+                  <div className="text-xs text-gray-500 text-right min-w-[140px]">
+                    <div className="mb-1">
+                      🔒 {unlockUnit?.emoji} {unlockUnit?.title} 완료 후 해금
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-indigo-500 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-gray-600 whitespace-nowrap">{completedCount}/{total}</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {unlocked && (

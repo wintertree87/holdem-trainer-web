@@ -1,6 +1,7 @@
 'use client';
 
 import { type MatchResult } from '@/hooks/useGameSession';
+import SpotReplay from './SpotReplay';
 
 type Props = {
   result: MatchResult;
@@ -62,6 +63,11 @@ export default function MatchSummary({ result, xpEarned, onClose }: Props) {
           <span className="text-sm text-indigo-300">XP 획득</span>
           <span className="text-lg font-bold text-indigo-400">+{xpEarned}</span>
         </div>
+
+        {/* Spot Replay */}
+        {result.history && result.history.length > 0 && (
+          <SpotReplay history={result.history} />
+        )}
 
         {/* Back button */}
         <button

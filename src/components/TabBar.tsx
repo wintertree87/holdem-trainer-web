@@ -8,9 +8,9 @@ type Props = {
 };
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'learn', label: '학습' },
-  { id: 'practice', label: '자유연습' },
-  { id: 'game', label: '게임' },
+  { id: 'learn', label: '트레이닝' },
+  { id: 'practice', label: '프리롤' },
+  { id: 'game', label: '대전' },
 ];
 
 export default function TabBar({ activeTab, onSwitch }: Props) {
