@@ -87,15 +87,22 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
     onNext();
   }, [onNext]);
 
-  // Auto-advance on correct answer after 1.5s
+  // Auto-advance on correct answer after 3s with countdown
+  const [countdown, setCountdown] = useState(3);
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (answered && isCorrect) {
+      setCountdown(3);
+      countdownRef.current = setInterval(() => {
+        setCountdown(prev => Math.max(prev - 1, 0));
+      }, 1000);
       autoAdvanceRef.current = setTimeout(() => {
         handleNext();
-      }, 1500);
+      }, 3000);
       return () => {
         if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+        if (countdownRef.current) clearInterval(countdownRef.current);
       };
     }
   }, [answered, isCorrect, handleNext]);
@@ -189,9 +196,12 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
 
           <div className="text-center">
             {isCorrect ? (
-              <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500/50 rounded-lg text-white/70 text-sm font-bold transition">
-                자동 넘김...
-              </button>
+              <div className="mt-3">
+                <button onClick={handleNext} className="px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
+                  다음
+                </button>
+                <div className="text-xs text-gray-500 mt-1.5">{countdown}초 후 자동 넘김</div>
+              </div>
             ) : (
               <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
                 계속
