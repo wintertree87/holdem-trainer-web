@@ -17,24 +17,52 @@ export default function LoginPage() {
 
   // getSession()으로 로컬 체크 — 서버 왕복 없이 즉시 판단
   useEffect(() => {
+    let mounted = true
     const supabase = createClient()
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.replace('/')
-      } else {
+    void supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (!mounted) return
+        if (error) {
+          console.error('Failed to read auth session on login page:', error)
+          setChecking(false)
+          return
+        }
+        if (session) {
+          router.replace('/')
+          return
+        }
         setChecking(false)
-      }
-    })
+      })
+      .catch((error) => {
+        if (!mounted) return
+        console.error('Unexpected auth session error on login page:', error)
+        setChecking(false)
+      })
+
+    return () => {
+      mounted = false
+    }
   }, [router])
 
   const handleKakao = () => {
     setLoading('kakao')
-    loginWithKakao()
+    try {
+      loginWithKakao()
+    } catch (error) {
+      console.error('Kakao login init failed:', error)
+      setLoading(null)
+    }
   }
 
-  const handleGoogle = () => {
+  const handleGoogle = async () => {
     setLoading('google')
-    loginWithGoogle()
+    try {
+      await loginWithGoogle()
+    } catch (error) {
+      console.error('Google login init failed:', error)
+      setLoading(null)
+    }
   }
 
   if (checking) {

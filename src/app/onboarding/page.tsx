@@ -72,12 +72,22 @@ export default function OnboardingPage() {
 
   const handleKakao = () => {
     setLoading('kakao');
-    loginWithKakao();
+    try {
+      loginWithKakao();
+    } catch (error) {
+      console.error('Kakao signup init failed:', error);
+      setLoading(null);
+    }
   };
 
-  const handleGoogle = () => {
+  const handleGoogle = async () => {
     setLoading('google');
-    loginWithGoogle();
+    try {
+      await loginWithGoogle();
+    } catch (error) {
+      console.error('Google signup init failed:', error);
+      setLoading(null);
+    }
   };
 
   // (A) 환영 화면

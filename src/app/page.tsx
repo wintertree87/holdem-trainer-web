@@ -66,13 +66,45 @@ export default function Home() {
   const [joinDate, setJoinDate] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) { setOnboardingCompleted(null); setJoinDate(null); return; }
+    let mounted = true;
+    if (!user) {
+      setOnboardingCompleted(null);
+      setJoinDate(null);
+      return () => {
+        mounted = false;
+      };
+    }
+
     const supabase = createClient();
-    supabase.from('profiles').select('onboarding_completed, created_at').eq('id', user.id).single()
-      .then(({ data }) => {
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('onboarding_completed, created_at')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!mounted) return;
+        if (error) {
+          console.error('Failed to load profile onboarding data:', error);
+          // 실패 시 앱 진입을 막지 않도록 온보딩 완료로 간주한다.
+          setOnboardingCompleted(true);
+          setJoinDate(null);
+          return;
+        }
         setOnboardingCompleted(data?.onboarding_completed ?? false);
         setJoinDate(data?.created_at ?? null);
-      });
+      } catch (error) {
+        if (!mounted) return;
+        console.error('Unexpected profile onboarding error:', error);
+        setOnboardingCompleted(true);
+        setJoinDate(null);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, [user]);
 
   const markOnboardingCompleted = useCallback(async () => {
@@ -358,6 +390,8 @@ export default function Home() {
               onBackToTree={lesson.backToTree}
               isLessonUnlocked={lesson.isLessonUnlocked}
               isTestOut={lesson.testOutUnitId !== null}
+              levelTitle={currentLevel.title}
+              levelNumber={currentLevel.level}
             />
           )}
         </>

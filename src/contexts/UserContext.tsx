@@ -25,17 +25,35 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient()
+    let mounted = true
 
     // 페이지 로드 시 UTM 캡처
     captureUtm()
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-      setLoading(false)
-    })
+    void supabase.auth
+      .getUser()
+      .then(({ data: { user }, error }) => {
+        if (!mounted) return
+        if (error) {
+          console.error('Failed to fetch auth user:', error)
+          setUser(null)
+          return
+        }
+        setUser(user)
+      })
+      .catch((error) => {
+        if (!mounted) return
+        console.error('Unexpected auth user error:', error)
+        setUser(null)
+      })
+      .finally(() => {
+        if (!mounted) return
+        setLoading(false)
+      })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        if (!mounted) return
         setUser(session?.user ?? null)
         setLoading(false)
 
@@ -44,17 +62,36 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           utmSavedRef.current = true
           const utm = getUtm()
           if (utm) {
-            await supabase.from('utm_tracking').insert({
-              user_id: session.user.id,
-              ...utm,
-            })
-            clearUtm()
+            // Supabase auth state callback 내부에서 await 호출 시 교착 상태가 생길 수 있어 비동기로 분리한다.
+            setTimeout(() => {
+              void (async () => {
+                try {
+                  const { error } = await supabase
+                    .from('utm_tracking')
+                    .insert({
+                      user_id: session.user.id,
+                      ...utm,
+                    })
+
+                  if (error) {
+                    console.error('Failed to save UTM tracking:', error)
+                    return
+                  }
+                  clearUtm()
+                } catch (error) {
+                  console.error('Unexpected UTM tracking error:', error)
+                }
+              })()
+            }, 0)
           }
         }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signOut = async () => {

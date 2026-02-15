@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { SKILL_TREE } from '@/data/skill-tree';
 import { useSound } from '@/hooks/useSound';
+import ShareButton from '@/components/ShareButton';
 
 type Props = {
   passed: boolean;
@@ -17,9 +18,11 @@ type Props = {
   onBackToTree: () => void;
   isLessonUnlocked: (unitId: number, lessonId: string) => boolean;
   isTestOut?: boolean;
+  levelTitle?: string;
+  levelNumber?: number;
 };
 
-export default function LessonResult({ passed, correct, total, wrong, xp, lessonId, unitId, onStartLesson, onBackToTree, isLessonUnlocked, isTestOut }: Props) {
+export default function LessonResult({ passed, correct, total, wrong, xp, lessonId, unitId, onStartLesson, onBackToTree, isLessonUnlocked, isTestOut, levelTitle, levelNumber }: Props) {
   const unit = SKILL_TREE.find(u => u.id === unitId);
   const lessonIdx = unit?.lessons.findIndex(l => l.id === lessonId) ?? -1;
   const nextLesson = unit?.lessons[lessonIdx + 1];
@@ -61,6 +64,16 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
     setTimeout(() => setShowXP(true), 300);
     setTimeout(() => setShowButtons(true), 800);
   }, [passed, wrong, playConfettiSound]);
+
+  const shareUrl = 'https://holdem-trainer-web-yy8p.vercel.app?utm_source=share&utm_medium=lesson_result';
+  const accuracy = Math.round((correct / total) * 100);
+  const levelTag = levelTitle && levelNumber ? ` | Lv.${levelNumber} ${levelTitle}` : '';
+  const unitName = unit?.title ?? '';
+  const shareText = isTestOut
+    ? `\uD83C\uDFC6 승급 성공! "${unitName}" 유닛 정복! 정답률 ${accuracy}%${levelTag}`
+    : wrong === 0
+      ? `\uD83C\uDF1F 퍼펙트! "${unitName}" 레슨 만점 클리어!${levelTag}`
+      : `\uD83C\uDFAF 홀덤 트레이너에서 "${unitName}" 레슨 클리어! 정답률 ${accuracy}%${levelTag}`;
 
   const emoji = isTestOut
     ? (passed ? '🏆' : '📚')
@@ -118,6 +131,7 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
                   다음 유닛: {nextUnit.title}
                 </button>
               )}
+              {passed && <ShareButton text={shareText} url={shareUrl} />}
               <button onClick={onBackToTree} className="py-3.5 px-5 bg-gray-700 rounded-xl text-gray-200 text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
                 스킬 트리로
               </button>
@@ -134,6 +148,7 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
                   다음 유닛: {nextUnit.title}
                 </button>
               )}
+              {passed && <ShareButton text={shareText} url={shareUrl} />}
               {!passed && (
                 <button onClick={() => onStartLesson(lessonId)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition animate-pulse-button">
                   다시 도전

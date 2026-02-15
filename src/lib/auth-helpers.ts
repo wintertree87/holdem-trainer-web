@@ -26,8 +26,7 @@ export function openExternalBrowser(targetPath = '/login'): void {
 export function loginWithKakao(): void {
   const clientId = process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID
   if (!clientId) {
-    console.error('NEXT_PUBLIC_KAKAO_CLIENT_ID not configured')
-    return
+    throw new Error('NEXT_PUBLIC_KAKAO_CLIENT_ID not configured')
   }
   const redirectUri = `${window.location.origin}/api/auth/kakao/callback`
   const scope = 'profile_nickname profile_image openid'
@@ -44,10 +43,13 @@ export function loginWithKakao(): void {
 /** Google OAuth via Supabase */
 export async function loginWithGoogle(): Promise<void> {
   const supabase = createClient()
-  await supabase.auth.signInWithOAuth({
+  const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: `${window.location.origin}/auth/callback`,
     },
   })
+  if (error) {
+    throw error
+  }
 }

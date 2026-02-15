@@ -17,10 +17,30 @@ export function useProgress() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    let mounted = true;
+    if (!user) {
+      setProgress({});
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    setLoading(true);
     const supabase = createClient();
-    supabase.from('lesson_progress').select('*').eq('user_id', user.id)
-      .then(({ data }) => {
+    void (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('lesson_progress')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (!mounted) return;
+        if (error) {
+          console.error('Failed to load lesson_progress:', error);
+          setProgress({});
+          return;
+        }
         const map: Record<string, LessonData> = {};
         data?.forEach((row: Record<string, unknown>) => {
           map[row.lesson_id as string] = {
@@ -31,8 +51,19 @@ export function useProgress() {
           };
         });
         setProgress(map);
+      } catch (error) {
+        if (!mounted) return;
+        console.error('Unexpected lesson_progress error:', error);
+        setProgress({});
+      } finally {
+        if (!mounted) return;
         setLoading(false);
-      });
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, [user]);
 
   const updateLesson = useCallback(async (lessonId: string, data: Partial<LessonData>) => {
