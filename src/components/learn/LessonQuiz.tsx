@@ -8,6 +8,7 @@ import PokerTable from '@/components/PokerTable';
 import GlossaryTip from '@/components/GlossaryTip';
 import AutoGlossary from '@/components/AutoGlossary';
 import RangeChart from '@/components/RangeChart';
+import HeartDisplay from '@/components/HeartDisplay';
 import type { Scenario } from '@/data/skill-tree';
 
 type LessonState = {
@@ -24,9 +25,13 @@ type Props = {
   onAnswer: (isCorrect: boolean) => void;
   onNext: () => void;
   onAbort: () => void;
+  // 글로벌 하트
+  hearts?: number;
+  maxHearts?: number;
+  nextRecoveryMs?: number | null;
 };
 
-export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: Props) {
+export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hearts: globalHearts, maxHearts: globalMaxHearts = 5, nextRecoveryMs: globalNextRecoveryMs }: Props) {
   const { scenarios, currentIndex, wrongCount, maxErrors, totalHands } = lessonState;
   const scenario = scenarios[currentIndex];
   const progressPct = Math.round((currentIndex / totalHands) * 100);
@@ -104,20 +109,24 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort }: P
         <div className="flex-1 h-2.5 bg-gray-700 rounded overflow-hidden">
           <div className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded transition-all duration-300" style={{ width: `${progressPct}%` }} />
         </div>
-        <div className="text-lg whitespace-nowrap flex gap-0.5">
-          {Array.from({ length: maxErrors }, (_, i) => {
-            const isLast = i === heartsRemaining && breakingHeart;
-            const isAlive = i < heartsRemaining;
-            return (
-              <span
-                key={i}
-                className={isLast ? 'animate-heart-break inline-block' : isAlive ? 'inline-block transition-transform' : 'inline-block opacity-40'}
-              >
-                {isAlive || isLast ? '❤️' : '🖤'}
-              </span>
-            );
-          })}
-        </div>
+        {globalHearts !== undefined ? (
+          <HeartDisplay hearts={globalHearts} maxHearts={globalMaxHearts} nextRecoveryMs={globalNextRecoveryMs ?? null} size="sm" />
+        ) : (
+          <div className="text-lg whitespace-nowrap flex gap-0.5">
+            {Array.from({ length: maxErrors }, (_, i) => {
+              const isLast = i === heartsRemaining && breakingHeart;
+              const isAlive = i < heartsRemaining;
+              return (
+                <span
+                  key={i}
+                  className={isLast ? 'animate-heart-break inline-block' : isAlive ? 'inline-block transition-transform' : 'inline-block opacity-40'}
+                >
+                  {isAlive || isLast ? '❤️' : '🖤'}
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Combo Streak */}

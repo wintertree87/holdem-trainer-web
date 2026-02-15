@@ -10,6 +10,7 @@ import { useWrongNotes } from '@/hooks/useWrongNotes';
 import { useSound } from '@/hooks/useSound';
 import { useStreak } from '@/hooks/useStreak';
 import { useLessonFlow } from '@/hooks/useLessonFlow';
+import { useHearts } from '@/hooks/useHearts';
 import { useGameSession, type MatchResult } from '@/hooks/useGameSession';
 import { type GameTier } from '@/data/game-config';
 import { createClient } from '@/lib/supabase-browser';
@@ -22,6 +23,8 @@ import SkillTree from '@/components/learn/SkillTree';
 import GuideCard from '@/components/learn/GuideCard';
 import LessonQuiz from '@/components/learn/LessonQuiz';
 import LessonResult from '@/components/learn/LessonResult';
+import HeartDisplay from '@/components/HeartDisplay';
+import NoHeartsOverlay from '@/components/learn/NoHeartsOverlay';
 import PracticeTab from '@/components/practice/PracticeTab';
 import GuideOverlay from '@/components/GuideOverlay';
 import WrongNotesModal from '@/components/modals/WrongNotesModal';
@@ -29,6 +32,7 @@ import GlossaryModal from '@/components/modals/GlossaryModal';
 import FeedbackModal from '@/components/modals/FeedbackModal';
 import LevelUpOverlay from '@/components/LevelUpOverlay';
 import ProfileOverlay from '@/components/ProfileOverlay';
+import DeleteAccountDialog from '@/components/modals/DeleteAccountDialog';
 import GameTab from '@/components/game/GameTab';
 import GameTable from '@/components/game/GameTable';
 import MatchSummary from '@/components/game/MatchSummary';
@@ -51,18 +55,21 @@ export default function Home() {
   const { muted, toggleMute, playLevelUp } = useSound();
   const { currentStreak, bestStreak, weekDays, justCheckedIn } = useStreak(todayCount);
 
-  const lesson = useLessonFlow({ progress, updateLesson, addXP });
+  const heartsHook = useHearts();
+  const lesson = useLessonFlow({ progress, updateLesson, addXP, consumeHeart: heartsHook.consumeHeart, canStartLesson: heartsHook.canStartLesson });
   const game = useGameSession();
 
   // Post-login onboarding state
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
+  const [joinDate, setJoinDate] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) { setOnboardingCompleted(null); return; }
+    if (!user) { setOnboardingCompleted(null); setJoinDate(null); return; }
     const supabase = createClient();
-    supabase.from('profiles').select('onboarding_completed').eq('id', user.id).single()
+    supabase.from('profiles').select('onboarding_completed, created_at').eq('id', user.id).single()
       .then(({ data }) => {
         setOnboardingCompleted(data?.onboarding_completed ?? false);
+        setJoinDate(data?.created_at ?? null);
       });
   }, [user]);
 
@@ -86,6 +93,7 @@ export default function Home() {
   const [showWrongNotes, setShowWrongNotes] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   // Load game stats
   useEffect(() => {
@@ -233,9 +241,6 @@ export default function Home() {
           onClick={() => { lesson.backToTree(); setActiveTab('learn'); }}
         >Holdem Trainer</h1>
         <div className="flex items-center gap-2">
-          <button onClick={toggleMute} className="text-lg" title={muted ? '소리 켜기' : '소리 끄기'}>
-            {muted ? '🔇' : '🔊'}
-          </button>
           <button onClick={() => setShowGuide(true)} className="text-lg" title="공략집">📚</button>
           <button onClick={() => setShowGlossary(true)} className="text-lg" title="용어사전">📖</button>
           {user && (
@@ -244,8 +249,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* XP Bar */}
-      <XPBar currentLevel={currentLevel} nextLevel={nextLevel} totalXP={totalXP} progressPct={progressPct} />
+      {/* XP Bar + Hearts */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex-1">
+          <XPBar currentLevel={currentLevel} nextLevel={nextLevel} totalXP={totalXP} progressPct={progressPct} />
+        </div>
+        {!heartsHook.loading && (
+          <HeartDisplay hearts={heartsHook.hearts} maxHearts={heartsHook.maxHearts} nextRecoveryMs={heartsHook.nextRecoveryMs} size="sm" />
+        )}
+      </div>
 
       {/* Daily Goal */}
       <DailyGoal todayCount={todayCount} isComplete={isComplete} percentage={percentage} streak={currentStreak} justCheckedIn={justCheckedIn} />
@@ -309,15 +321,22 @@ export default function Home() {
           )}
 
           {lesson.learnScreen === 'quiz' && lesson.lessonState && (
-            <LessonQuiz
-              lessonState={lesson.lessonState}
-              onAnswer={(isCorrect) => {
-                lesson.handleAnswer(isCorrect);
-                increment();
-              }}
-              onNext={lesson.handleNext}
-              onAbort={lesson.abortLesson}
-            />
+            heartsHook.hearts <= 0 ? (
+              <NoHeartsOverlay nextRecoveryMs={heartsHook.nextRecoveryMs} onBack={lesson.backToTree} />
+            ) : (
+              <LessonQuiz
+                lessonState={lesson.lessonState}
+                onAnswer={(isCorrect) => {
+                  lesson.handleAnswer(isCorrect);
+                  increment();
+                }}
+                onNext={lesson.handleNext}
+                onAbort={lesson.abortLesson}
+                hearts={heartsHook.hearts}
+                maxHearts={heartsHook.maxHearts}
+                nextRecoveryMs={heartsHook.nextRecoveryMs}
+              />
+            )
           )}
 
           {lesson.learnScreen === 'result' && lesson.lessonResult && (lesson.activeLessonId || lesson.testOutUnitId !== null) && (
@@ -401,6 +420,14 @@ export default function Home() {
             }),
             { wins: 0, losses: 0, ties: 0, totalBbWon: 0 }
           )}
+          todayCount={todayCount}
+          joinDate={joinDate}
+          muted={muted}
+          onToggleMute={toggleMute}
+          onDeleteAccount={() => { setShowProfile(false); setShowDeleteAccount(true); }}
+          hearts={heartsHook.hearts}
+          maxHearts={heartsHook.maxHearts}
+          nextRecoveryMs={heartsHook.nextRecoveryMs}
         />
       )}
 
@@ -425,6 +452,14 @@ export default function Home() {
 
       {/* Feedback Modal */}
       {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
+
+      {/* Delete Account Dialog */}
+      {showDeleteAccount && (
+        <DeleteAccountDialog
+          onClose={() => setShowDeleteAccount(false)}
+          onDeleted={() => { window.location.href = '/onboarding'; }}
+        />
+      )}
     </div>
   );
 }

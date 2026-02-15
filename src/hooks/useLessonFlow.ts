@@ -29,9 +29,11 @@ type UseLessonFlowParams = {
   progress: Record<string, LessonData>;
   updateLesson: (lessonId: string, data: Partial<LessonData>) => Promise<void>;
   addXP: (amount: number) => Promise<void>;
+  consumeHeart?: () => Promise<number>;
+  canStartLesson?: boolean;
 };
 
-export function useLessonFlow({ progress, updateLesson, addXP }: UseLessonFlowParams) {
+export function useLessonFlow({ progress, updateLesson, addXP, consumeHeart, canStartLesson = true }: UseLessonFlowParams) {
   const [learnScreen, setLearnScreen] = useState<LearnScreen>('tree');
   const [openUnitId, setOpenUnitId] = useState<number | null>(null);
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -97,6 +99,7 @@ export function useLessonFlow({ progress, updateLesson, addXP }: UseLessonFlowPa
   }, []);
 
   const beginQuiz = useCallback(() => {
+    if (!canStartLesson) return;
     if (testOutUnitId !== null) {
       const scenarios = generateTestOutScenarios(testOutUnitId);
       setLessonState({
@@ -142,9 +145,12 @@ export function useLessonFlow({ progress, updateLesson, addXP }: UseLessonFlowPa
       totalHands: scenarios.length,
     });
     setLearnScreen('quiz');
-  }, [activeLessonId, testOutUnitId]);
+  }, [activeLessonId, testOutUnitId, canStartLesson]);
 
   const handleAnswer = useCallback((isCorrect: boolean) => {
+    if (!isCorrect && consumeHeart) {
+      consumeHeart();
+    }
     setLessonState(prev => {
       if (!prev) return prev;
       return {
@@ -153,7 +159,7 @@ export function useLessonFlow({ progress, updateLesson, addXP }: UseLessonFlowPa
         wrongCount: prev.wrongCount + (isCorrect ? 0 : 1),
       };
     });
-  }, []);
+  }, [consumeHeart]);
 
   const handleNext = useCallback(() => {
     setLessonState(prev => {

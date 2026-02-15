@@ -25,7 +25,7 @@ export default function XPBar({ currentLevel, totalXP, progressPct }: Props) {
   }, [totalXP]);
 
   return (
-    <div className="flex items-center gap-3 mb-3 px-1">
+    <div className="flex items-center gap-3 px-1">
       <div className="flex items-center gap-1.5">
         <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-500/20 text-xs font-black text-indigo-400">
           {currentLevel.level}
