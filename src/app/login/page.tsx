@@ -11,14 +11,21 @@ function isInAppBrowser(): boolean {
   return /KAKAOTALK|Instagram|FBAN|FBAV|NAVER|Line|Twitter|Snapchat|Daum/i.test(ua)
 }
 
-function getExternalBrowserUrl(): string {
+function openExternalBrowser(): void {
   const url = window.location.href
   const ua = navigator.userAgent || ''
-  // Android: intent URL로 Chrome 열기
-  if (/Android/i.test(ua)) {
-    return `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`
+  // 카카오톡 인앱: 카카오 딥링크로 Safari/Chrome 열기
+  if (/KAKAOTALK/i.test(ua)) {
+    window.location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url)
+    return
   }
-  return url
+  // Android 기타 인앱: intent URL로 Chrome 열기
+  if (/Android/i.test(ua)) {
+    window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`
+    return
+  }
+  // iOS 기타 인앱: Safari 직접 열기 불가 — 링크 복사 유도
+  window.location.href = url
 }
 
 export default function LoginPage() {
@@ -54,8 +61,7 @@ export default function LoginPage() {
   }
 
   const handleOpenExternal = () => {
-    const url = getExternalBrowserUrl()
-    window.location.href = url
+    openExternalBrowser()
   }
 
   const handleCopyLink = async () => {
