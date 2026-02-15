@@ -49,7 +49,7 @@ export default function Home() {
   const { todayCount, increment, isComplete, percentage } = useDailyGoal();
   const { notes, addNote, clearNotes } = useWrongNotes();
   const { muted, toggleMute, playLevelUp } = useSound();
-  const { currentStreak, bestStreak, weekDays } = useStreak();
+  const { currentStreak, bestStreak, weekDays } = useStreak(todayCount);
 
   const lesson = useLessonFlow({ progress, updateLesson, addXP });
   const game = useGameSession();

@@ -24,7 +24,7 @@ function getDayLabel(daysAgo: number) {
 
 export type WeekDay = { label: string; done: boolean };
 
-export function useStreak() {
+export function useStreak(todayCount: number) {
   const { user } = useUser();
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
@@ -32,16 +32,17 @@ export function useStreak() {
   const [activeDates, setActiveDates] = useState<Set<string>>(new Set());
 
   // 최근 7일: 실제 요일 라벨 + 활동 여부
+  // todayCount를 직접 반영해서 문제 풀면 즉시 오늘 칸 업데이트
   const weekDays = useMemo<WeekDay[]>(() => {
     const days: WeekDay[] = [];
     for (let i = 6; i >= 0; i--) {
       days.push({
         label: getDayLabel(i),
-        done: activeDates.has(getDateStr(i)),
+        done: i === 0 ? todayCount > 0 : activeDates.has(getDateStr(i)),
       });
     }
     return days;
-  }, [activeDates]);
+  }, [activeDates, todayCount]);
 
   useEffect(() => {
     if (!user) return;
