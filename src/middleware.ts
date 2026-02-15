@@ -36,6 +36,10 @@ export async function middleware(request: NextRequest) {
   if (!user && !request.nextUrl.pathname.startsWith('/login') && !request.nextUrl.pathname.startsWith('/auth') && !request.nextUrl.pathname.startsWith('/api/auth') && !request.nextUrl.pathname.startsWith('/onboarding')) {
     const url = request.nextUrl.clone()
     url.pathname = '/onboarding'
+    // UTM 파라미터 보존 (리다이렉트 시 날아가지 않도록)
+    request.nextUrl.searchParams.forEach((value, key) => {
+      url.searchParams.set(key, value)
+    })
     return NextResponse.redirect(url)
   }
 

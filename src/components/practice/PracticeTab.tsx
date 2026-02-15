@@ -246,9 +246,14 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
                   currentHand={notation}
                 />
               )}
+            </div>
+          )}
 
-              <button onClick={newHand} className="mt-3 px-6 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
-                다음 핸드
+          {/* 다음 핸드 — 하단 고정 */}
+          {result && (
+            <div className="sticky bottom-0 pt-2 pb-4 -mx-4 px-4" style={{ background: 'linear-gradient(to top, var(--background) 60%, transparent)' }}>
+              <button onClick={newHand} className="w-full py-3 bg-indigo-500 rounded-xl text-white font-bold hover:bg-indigo-600 active:scale-[0.98] transition shadow-lg shadow-indigo-500/20">
+                다음 핸드 →
               </button>
             </div>
           )}
