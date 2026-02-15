@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   },
   other: {
     "mobile-web-app-capable": "yes",
-    "naver-site-verification": "", // Naver Search Advisor 인증 후 채우기
+    "naver-site-verification": "9ae4710768f1fe6eecdf10c4585613d8515b6d42",
   },
 };
 
