@@ -3,18 +3,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { mdToHtml } from '@/utils/markdown';
 
-type GuideLevel = 'beginner' | 'intermediate' | 'advanced';
+type GuideLevel = 'beginner' | 'intermediate' | 'advanced' | 'reference';
 
 const GUIDE_PATHS: Record<GuideLevel, string> = {
   beginner: '/docs/홀덤 공략집.md',
   intermediate: '/docs/홀덤 공략집 - 중급편.md',
   advanced: '/docs/홀덤 공략집 - 고급편.md',
+  reference: '/docs/홀덤 확률표.md',
 };
 
 const GUIDE_LABELS: { level: GuideLevel; label: string; color: string }[] = [
   { level: 'beginner', label: '초급', color: 'bg-green-500' },
   { level: 'intermediate', label: '중급', color: 'bg-yellow-500' },
   { level: 'advanced', label: '고급', color: 'bg-red-500' },
+  { level: 'reference', label: '확률표', color: 'bg-blue-500' },
 ];
 
 type Props = {

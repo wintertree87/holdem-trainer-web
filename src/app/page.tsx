@@ -24,6 +24,7 @@ import PracticeTab from '@/components/practice/PracticeTab';
 import GuideOverlay from '@/components/GuideOverlay';
 import WrongNotesModal from '@/components/modals/WrongNotesModal';
 import GlossaryModal from '@/components/modals/GlossaryModal';
+import FeedbackModal from '@/components/modals/FeedbackModal';
 import LevelUpOverlay from '@/components/LevelUpOverlay';
 import GameTab from '@/components/game/GameTab';
 import GameTable from '@/components/game/GameTable';
@@ -60,6 +61,7 @@ export default function Home() {
   const [showGuide, setShowGuide] = useState(false);
   const [showWrongNotes, setShowWrongNotes] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   // Load game stats
   useEffect(() => {
@@ -317,6 +319,16 @@ export default function Home() {
         />
       )}
 
+      {/* Feedback */}
+      <div className="flex justify-center mt-8 mb-4">
+        <button
+          onClick={() => setShowFeedback(true)}
+          className="text-xs text-gray-500 hover:text-gray-300 transition cursor-pointer"
+        >
+          💬 피드백 보내기
+        </button>
+      </div>
+
       {/* Level Up Overlay */}
       {levelUpInfo && (
         <LevelUpOverlay
@@ -344,6 +356,9 @@ export default function Home() {
 
       {/* Glossary Modal */}
       {showGlossary && <GlossaryModal onClose={() => setShowGlossary(false)} />}
+
+      {/* Feedback Modal */}
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
     </div>
   );
 }
