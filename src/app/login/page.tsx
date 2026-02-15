@@ -50,13 +50,17 @@ export default function LoginPage() {
     })
   }, [router])
 
-  const handleLogin = async (provider: 'google' | 'kakao') => {
+  const handleKakaoLogin = () => {
+    // Custom OIDC flow — bypasses Supabase GoTrue default scopes
+    window.location.href = '/api/auth/kakao'
+  }
+
+  const handleGoogleLogin = async () => {
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
-      provider,
+      provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
-        ...(provider === 'kakao' && { scopes: 'profile_nickname profile_image' }),
       },
     })
   }
@@ -126,7 +130,7 @@ export default function LoginPage() {
         <div className="space-y-3">
           {/* Kakao Login — 항상 표시 (인앱에서도 동작) */}
           <button
-            onClick={() => handleLogin('kakao')}
+            onClick={handleKakaoLogin}
             className="w-full py-3.5 px-6 bg-[#FEE500] text-[#191919] rounded-xl font-semibold text-base flex items-center justify-center gap-3 cursor-pointer hover:bg-[#FDD800] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -152,7 +156,7 @@ export default function LoginPage() {
             </>
           ) : (
             <button
-              onClick={() => handleLogin('google')}
+              onClick={handleGoogleLogin}
               className="w-full py-3.5 px-6 bg-white text-gray-900 rounded-xl font-semibold text-base flex items-center justify-center gap-3 cursor-pointer hover:bg-gray-50 hover:shadow-lg hover:shadow-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
