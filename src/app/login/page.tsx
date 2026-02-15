@@ -50,10 +50,10 @@ export default function LoginPage() {
     })
   }, [router])
 
-  const handleLogin = async () => {
+  const handleLogin = async (provider: 'google' | 'kakao') => {
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
-      provider: 'google',
+      provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -121,42 +121,37 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* In-App Browser Warning */}
-        {inApp ? (
-          <div className="space-y-3">
-            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-left">
-              <p className="text-amber-400 text-sm font-semibold mb-1">
-                외부 브라우저에서 열어주세요
-              </p>
-              <p className="text-gray-400 text-xs leading-relaxed">
-                현재 앱 내 브라우저에서는 Google 로그인이 제한됩니다.
-                Chrome이나 Safari에서 열어주세요.
-              </p>
-            </div>
+        {/* Login Buttons */}
+        <div className="space-y-3">
+          {/* Kakao Login — 항상 표시 (인앱에서도 동작) */}
+          <button
+            onClick={() => handleLogin('kakao')}
+            className="w-full py-3.5 px-6 bg-[#FEE500] text-[#191919] rounded-xl font-semibold text-base flex items-center justify-center gap-3 cursor-pointer hover:bg-[#FDD800] hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#191919" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24l-1.12 4.16c-.1.36.31.65.63.44l4.94-3.26c.38.04.77.06 1.17.06 5.52 0 10-3.36 10-7.5S17.52 3 12 3z"/>
+            </svg>
+            카카오로 시작하기
+          </button>
 
+          {/* Google Login — 인앱에서는 외부 브라우저 안내 */}
+          {inApp ? (
+            <>
+              <div className="flex items-center gap-3 my-2">
+                <div className="flex-1 h-px bg-gray-700" />
+                <span className="text-xs text-gray-500">또는</span>
+                <div className="flex-1 h-px bg-gray-700" />
+              </div>
+              <button
+                onClick={handleOpenExternal}
+                className="w-full py-3 px-6 bg-gray-700 text-gray-200 rounded-xl font-medium text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-600 active:scale-[0.98] transition-all duration-200"
+              >
+                Google 로그인은 외부 브라우저에서 →
+              </button>
+            </>
+          ) : (
             <button
-              onClick={handleOpenExternal}
-              className="w-full py-3.5 px-6 bg-white text-gray-900 rounded-xl font-semibold text-base flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-50 active:scale-[0.98] transition-all duration-200"
-            >
-              외부 브라우저로 열기
-            </button>
-
-            <button
-              onClick={handleCopyLink}
-              className="w-full py-3 px-6 bg-gray-700 text-gray-200 rounded-xl font-medium text-sm flex items-center justify-center gap-2 cursor-pointer hover:bg-gray-600 active:scale-[0.98] transition-all duration-200"
-            >
-              {copied ? '복사됨!' : '링크 복사하기'}
-            </button>
-
-            <p className="text-gray-600 text-xs">
-              복사한 링크를 Chrome 또는 Safari에 붙여넣기 해주세요
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Login Button */}
-            <button
-              onClick={handleLogin}
+              onClick={() => handleLogin('google')}
               className="w-full py-3.5 px-6 bg-white text-gray-900 rounded-xl font-semibold text-base flex items-center justify-center gap-3 cursor-pointer hover:bg-gray-50 hover:shadow-lg hover:shadow-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -167,19 +162,19 @@ export default function LoginPage() {
               </svg>
               Google로 시작하기
             </button>
+          )}
+        </div>
 
-            <p className="text-gray-600 text-xs mt-4">
-              기기 간 학습 기록 동기화를 위해 로그인이 필요합니다
-            </p>
+        <p className="text-gray-600 text-xs mt-4">
+          기기 간 학습 기록 동기화를 위해 로그인이 필요합니다
+        </p>
 
-            <a
-              href="/onboarding"
-              className="inline-block text-indigo-400 text-sm mt-3 hover:text-indigo-300 transition-colors"
-            >
-              먼저 체험해보기 →
-            </a>
-          </>
-        )}
+        <a
+          href="/onboarding"
+          className="inline-block text-indigo-400 text-sm mt-3 hover:text-indigo-300 transition-colors"
+        >
+          먼저 체험해보기 →
+        </a>
       </div>
     </div>
   )
