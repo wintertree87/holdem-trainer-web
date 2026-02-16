@@ -101,6 +101,13 @@ npm run build        # 프로덕션 빌드
 npx next build       # 빌드 검증
 ```
 
+## 현재 상태
+- **Phase**: Phase 2 (Fun Shift)
+- **Gate**: 4 — PO 런칭 승인 대기
+- **마지막 커맨드**: /review qa (2026-02-16)
+- **다음 액션**: PO 런칭 승인 → /launch deploy
+- **블로커**: 없음
+
 ## 배포 현황
 - **프로덕션**: https://holdem-trainer-web-yy8p.vercel.app (Vercel, GitHub 연동 자동 배포)
 - 레거시: index.html은 백업으로 유지

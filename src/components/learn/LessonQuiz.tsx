@@ -87,26 +87,6 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
     onNext();
   }, [onNext]);
 
-  // Auto-advance on correct answer after 3s with countdown
-  const [countdown, setCountdown] = useState(3);
-  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => {
-    if (answered && isCorrect) {
-      setCountdown(3);
-      countdownRef.current = setInterval(() => {
-        setCountdown(prev => Math.max(prev - 1, 0));
-      }, 1000);
-      autoAdvanceRef.current = setTimeout(() => {
-        handleNext();
-      }, 3000);
-      return () => {
-        if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
-        if (countdownRef.current) clearInterval(countdownRef.current);
-      };
-    }
-  }, [answered, isCorrect, handleNext]);
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (answered && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); handleNext(); }
@@ -155,7 +135,7 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
           <span className={`inline-block px-4 py-1.5 rounded-full text-sm font-bold ${
             combo >= 5 ? 'bg-red-500/20 text-red-400 animate-combo-fire' : 'bg-amber-500/20 text-amber-400'
           }`}>
-            {combo >= 5 ? '🔥 On Fire! ' : '🔥 '}{combo} Streak!
+            🔥 {combo}연속 정답!
           </span>
         </div>
       )}
@@ -180,7 +160,7 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
       {answered && (
         <div className={`animate-slide-up p-4 rounded-xl mt-4 ${isCorrect ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
           <div className={`text-base font-bold mb-1.5 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-            {isCorrect ? (combo >= 5 ? '🔥 On Fire!' : combo >= 3 ? '🎯 좋은 흐름!' : '나이스!') : '아쉬운 판단!'}
+            {isCorrect ? (combo >= 5 ? '🔥 완벽한 흐름!' : combo >= 3 ? '연속 정답!' : '좋은 판단이에요') : '이번엔 아쉽네요'}
           </div>
           <div className="text-sm text-gray-300 leading-6"><AutoGlossary text={scenario.explanation || ''} /></div>
 
@@ -194,19 +174,10 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
             />
           )}
 
-          <div className="text-center">
-            {isCorrect ? (
-              <div className="mt-3">
-                <button onClick={handleNext} className="px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
-                  다음
-                </button>
-                <div className="text-xs text-gray-500 mt-1.5">{countdown}초 후 자동 넘김</div>
-              </div>
-            ) : (
-              <button onClick={handleNext} className="mt-3 px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
-                계속
-              </button>
-            )}
+          <div className="text-center mt-3">
+            <button onClick={handleNext} className="px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
+              {isCorrect ? '다음' : '계속'}
+            </button>
           </div>
         </div>
       )}

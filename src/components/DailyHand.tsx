@@ -39,7 +39,7 @@ export default function DailyHand({ userId }: Props) {
         </div>
         {answered && (
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isCorrect ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-            {isCorrect ? '나이스!' : '아쉬운 판단'}
+            {isCorrect ? '정답!' : '아쉽네요'}
           </span>
         )}
       </div>

@@ -114,14 +114,14 @@ function PlayerInfo({ label, emoji, position, stack, isBtn, isHero }: {
     : 'text-white';
 
   const bgClass = isHero
-    ? 'bg-yellow-500/10 border border-yellow-500/20'
+    ? 'bg-yellow-500/20 border border-yellow-500/30 shadow-[0_0_12px_rgba(234,179,8,0.15)]'
     : 'bg-red-500/10 border border-red-500/20';
 
   return (
     <div className={`w-full max-w-[400px] backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center justify-between ${bgClass}`}>
       <div className="flex items-center gap-2">
-        <span className="text-sm">{emoji}</span>
-        <span className="text-sm text-gray-300 font-medium">{label}</span>
+        <span className={isHero ? 'text-base' : 'text-base'}>{emoji}</span>
+        <span className={`text-sm font-medium ${isHero ? 'text-yellow-300' : 'text-gray-300'}`}>{label}</span>
         <span className="text-[10px] bg-yellow-500/20 text-yellow-400 rounded-full px-2 py-0.5 font-bold">
           {position}
         </span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { POSITION_ORDER, POSITION_INFO, SUIT_NAMES, RANKS, type Card } from '@/data/constants';
 import { RFI_RANGES, FACING_RFI_RANGES, VS_3BET_RANGES } from '@/data/ranges';
 import { generateHand, getHandNotation, getHandDescription } from '@/utils/hand';
@@ -41,7 +41,16 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
   const [sessionCorrect, setSessionCorrect] = useState(0);
   const [sessionWrong, setSessionWrong] = useState(0);
   const [dealKey, setDealKey] = useState(0);
+  const [showRange, setShowRange] = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
   const { playCorrect, playWrong } = useSound();
+
+  // 결과가 나오면 자동 스크롤
+  useEffect(() => {
+    if (result && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [result]);
 
   const newHand = useCallback(() => {
     const cards = generateHand();
@@ -49,6 +58,7 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
     setHand(cards);
     setNotation(nota);
     setResult(null);
+    setShowRange(false);
     setDealKey(k => k + 1);
 
     let pos = position;
@@ -141,6 +151,14 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
         ))}
       </div>
 
+      {/* Mode Description */}
+      <div className="text-xs text-gray-500 -mt-2">
+        {mode === 'rfi' && '아무도 베팅 안 했을 때, 내 핸드로 레이즈할지 폴드할지 연습'}
+        {mode === 'facing' && '상대가 레이즈했을 때, 콜/3bet/폴드 판단 연습'}
+        {mode === 'vs3bet' && '내가 레이즈 후 상대가 리레이즈(3bet) 했을 때 대응 연습'}
+        {mode === 'cbet' && '플랍에서 C-bet(컨티뉴에이션 벳)할지 체크할지 연습'}
+      </div>
+
       {/* Stats with mini donut */}
       <div className="flex items-center gap-4 text-sm text-gray-400">
         {sessionTotal > 0 && (
@@ -231,20 +249,30 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
 
           {/* Result */}
           {result && (
-            <div className={`animate-slide-up p-4 rounded-xl ${result.correct ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+            <div ref={resultRef} className={`animate-slide-up p-4 rounded-xl ${result.correct ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
               <div className={`text-base font-bold mb-1 ${result.correct ? 'text-green-400' : 'text-red-400'}`}>
                 {result.correct ? '정답!' : '오답!'}
               </div>
               <div className="text-sm text-gray-300">{result.explanation}</div>
 
-              {/* Range Chart (RFI/Facing/vs3bet only) */}
+              {/* Range Chart Toggle (RFI/Facing/vs3bet only) */}
               {mode !== 'cbet' && (
-                <RangeChart
-                  mode={mode === 'facing' ? 'facing' : mode === 'vs3bet' ? 'vs3bet' : 'rfi'}
-                  position={position}
-                  vsPosition={vsPosition || undefined}
-                  currentHand={notation}
-                />
+                <div className="mt-2">
+                  <button
+                    onClick={() => setShowRange(v => !v)}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+                  >
+                    {showRange ? '레인지 접기 ▲' : '레인지 보기 ▼'}
+                  </button>
+                  {showRange && (
+                    <RangeChart
+                      mode={mode === 'facing' ? 'facing' : mode === 'vs3bet' ? 'vs3bet' : 'rfi'}
+                      position={position}
+                      vsPosition={vsPosition || undefined}
+                      currentHand={notation}
+                    />
+                  )}
+                </div>
               )}
             </div>
           )}

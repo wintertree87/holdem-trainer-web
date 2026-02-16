@@ -106,8 +106,7 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
 
                 {status === 'current' && (
                   <button
-                    className="animate-slide-in w-full mt-3 py-2.5 px-4 border border-gray-600 rounded-xl text-gray-400 text-xs font-medium hover:border-amber-500/50 hover:text-amber-400 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
-                    style={{ animationDelay: `${unit.lessons.length * 0.08}s` }}
+                    className="w-full mt-3 py-3 px-4 border border-amber-500/30 bg-amber-500/5 rounded-xl text-amber-400 text-sm font-bold hover:bg-amber-500/10 hover:border-amber-500/50 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
                     onClick={(e) => { e.stopPropagation(); onStartTestOut(unit.id); }}
                   >
                     🏆 승급전으로 한번에 통과하기

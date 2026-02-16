@@ -172,7 +172,7 @@ export const SKILL_TREE: Unit[] = [
       {
         id: '2-3', title: 'IP vs OOP', subtitle: '포지션 유불리의 핵심',
         quizType: 'identify', handCount: 4, maxErrors: 2,
-        guideTip: '나중에 행동하는 사람이 유리해요. (상대 행동을 보고 결정하니까)\n나중에 행동 = 유리한 자리(IP)\n먼저 행동 = 불리한 자리(OOP)\n같은 패라도 유리한 자리에선 더 적극적으로 플레이할 수 있어요!',
+        guideTip: '나중에 행동하는 사람이 유리해요. (상대 행동을 보고 결정하니까)\n나중에 행동 = IP(In Position, 유리한 자리)\n먼저 행동 = OOP(Out Of Position, 불리한 자리)\n같은 핸드라도 IP에선 더 적극적으로 플레이할 수 있어요!',
         scenarios: [
           { question: 'BTN이 오픈하고 BB가 콜. 포스트플랍에서 IP인 쪽은?', options: ['BTN','BB'], answer: 'BTN', explanation: 'BB가 먼저 행동하고 BTN이 나중에 행동. BTN이 IP.' },
           { question: 'CO가 오픈하고 HJ가 콜. HJ는 IP인가 OOP인가?', options: ['OOP','IP'], answer: 'OOP', explanation: 'HJ가 CO보다 앞에 앉아있으므로 포스트플랍에서 먼저 행동. OOP.' },
@@ -229,7 +229,7 @@ export const SKILL_TREE: Unit[] = [
       {
         id: '5-2', title: 'SB 오픈 실전', subtitle: 'SB RFI 연습',
         quizType: 'rfi_dynamic', handCount: 8, maxErrors: 3, positions: ['SB'],
-        guideTip: 'SB는 특수한 포지션이에요.\n전원 폴드 상황에서 SB RFI 레인지를 연습합니다.\n레이즈 or 폴드로 판단. (림프는 별도 전략)'
+        guideTip: 'SB는 특수한 포지션이에요.\n전원 폴드 상황에서 SB RFI(Raise First In, 첫 번째 레이즈) 레인지를 연습합니다.\n레이즈 or 폴드로 판단. (림프는 별도 전략)'
       },
       {
         id: '5-3', title: 'BB 디펜스', subtitle: '빅 블라인드의 방어',
@@ -295,7 +295,7 @@ export const SKILL_TREE: Unit[] = [
       {
         id: '7-2', title: 'EP/MP에서 vs 3bet', subtitle: '앞자리에서 3벳 대응',
         quizType: 'vs3bet_dynamic', handCount: 8, maxErrors: 3, positions: ['UTG', 'LJ', 'HJ'],
-        guideTip: 'EP/MP에서 오픈했을 때 3벳을 받으면?\n내 오픈 레인지가 타이트하므로 더 넓게 계속할 수 있어요.\n4벳 / 콜 / 폴드를 연습합니다.'
+        guideTip: 'EP(Early Position, 앞자리)/MP(Middle Position, 중간자리)에서 오픈했을 때 3벳을 받으면?\n내 오픈 레인지가 타이트하므로 더 넓게 계속할 수 있어요.\n4벳 / 콜 / 폴드를 연습합니다.'
       },
       {
         id: '7-3', title: 'LP에서 vs 3bet', subtitle: '뒷자리에서 3벳 대응',
