@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { SKILL_TREE } from '@/data/skill-tree';
-import { generateRfiScenarios, generateFacingScenarios, generateVs3betScenarios, generateTestOutScenarios } from '@/utils/scenario';
+import { SKILL_TREE, CHAPTERS } from '@/data/skill-tree';
+import { generateRfiScenarios, generateFacingScenarios, generateVs3betScenarios, generateTestOutScenarios, generateBossScenarios, generateBoardTextureScenarios, generateHandStrengthScenarios, generatePotOddsScenarios, generateCbetScenarios, generateTurnScenarios, generateRiverScenarios, generateSizingScenarios } from '@/utils/scenario';
 import { shuffleArray } from '@/utils/shuffle';
 import type { Scenario } from '@/data/skill-tree';
 import type { LessonData } from '@/hooks/useProgress';
@@ -45,7 +45,7 @@ export function useLessonFlow({ progress, updateLesson, addXP, consumeHeart, can
 
   // Unit/lesson unlock logic
   const getUnitStatus = useCallback((unitId: number): 'locked' | 'current' | 'completed' => {
-    const unit = SKILL_TREE.find(u => u.id === unitId)!;
+    const unit = SKILL_TREE.find(u => u.id === unitId);
     if (!unit) return 'locked';
 
     if (unitId === 0) {
@@ -54,6 +54,20 @@ export function useLessonFlow({ progress, updateLesson, addXP, consumeHeart, can
       const hasLaterProgress = SKILL_TREE.some(u => u.id > 0 && u.lessons.some(l => (progress[l.id]?.crown || 0) >= 1));
       if (hasLaterProgress) return 'completed';
       return 'current';
+    }
+
+    // Boss unit: requires all chapter units completed
+    if (unit.isBoss) {
+      const chapter = CHAPTERS.find(c => c.bossUnitId === unitId);
+      if (!chapter) return 'locked';
+      const chapterUnitsCompleted = chapter.unitIds.every(id => {
+        const u = SKILL_TREE.find(su => su.id === id);
+        if (!u || u.lessons.length === 0) return true;
+        return u.lessons.every(l => (progress[l.id]?.crown || 0) >= 1);
+      });
+      if (!chapterUnitsCompleted) return 'locked';
+      const allCompleted = unit.lessons.every(l => (progress[l.id]?.crown || 0) >= 1);
+      return allCompleted ? 'completed' : 'current';
     }
 
     const unitIndex = SKILL_TREE.findIndex(u => u.id === unitId);
@@ -122,6 +136,24 @@ export function useLessonFlow({ progress, updateLesson, addXP, consumeHeart, can
     if (!lesson) return;
 
     let scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
+
+    // Boss quiz: generate from chapter units
+    if (lesson.quizType === 'boss') {
+      const chapter = CHAPTERS.find(c => c.bossUnitId === unit.id);
+      if (!chapter) return;
+      scenarios = generateBossScenarios(chapter.id, lesson.handCount);
+      setLessonState({
+        scenarios,
+        currentIndex: 0,
+        correctCount: 0,
+        wrongCount: 0,
+        maxErrors: lesson.maxErrors,
+        totalHands: scenarios.length,
+      });
+      setLearnScreen('quiz');
+      return;
+    }
+
     const warmup = (lesson.scenarios || []).map(s => ({ ...s, quizType: 'identify' as const, options: shuffleArray(s.options) }));
 
     if (lesson.quizType === 'rfi_dynamic' && lesson.positions) {
@@ -133,6 +165,27 @@ export function useLessonFlow({ progress, updateLesson, addXP, consumeHeart, can
     } else if (lesson.quizType === 'vs3bet_dynamic' && lesson.positions) {
       const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
       scenarios = [...warmup, ...generateVs3betScenarios(lesson.positions, dynamicCount)];
+    } else if (lesson.quizType === 'board_texture') {
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateBoardTextureScenarios(dynamicCount)];
+    } else if (lesson.quizType === 'hand_strength') {
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateHandStrengthScenarios(dynamicCount)];
+    } else if (lesson.quizType === 'pot_odds') {
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generatePotOddsScenarios(dynamicCount)];
+    } else if (lesson.quizType === 'cbet_dynamic') {
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateCbetScenarios(dynamicCount)];
+    } else if (lesson.quizType === 'turn_dynamic') {
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateTurnScenarios(dynamicCount)];
+    } else if (lesson.quizType === 'river_dynamic') {
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateRiverScenarios(dynamicCount)];
+    } else if (lesson.quizType === 'sizing_dynamic') {
+      const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
+      scenarios = [...warmup, ...generateSizingScenarios(dynamicCount)];
     } else {
       scenarios = (lesson.scenarios || []).map(s => ({ ...s, quizType: lesson.quizType, options: shuffleArray(s.options) }));
     }
@@ -192,6 +245,22 @@ export function useLessonFlow({ progress, updateLesson, addXP, consumeHeart, can
             addXP(xpEarned);
           }
         } else if (passed && activeLessonId) {
+          // Boss lesson: 100 XP
+          const currentUnit = SKILL_TREE.find(u => u.lessons.some(l => l.id === activeLessonId));
+          if (currentUnit?.isBoss) {
+            xpEarned = 100;
+            updateLesson(activeLessonId, {
+              crown: 1,
+              bestAccuracy: Math.max(progress[activeLessonId]?.bestAccuracy || 0, accuracy),
+              attempts: (progress[activeLessonId]?.attempts || 0) + 1,
+              lastAttempt: new Date().toISOString().slice(0, 10),
+            });
+            addXP(xpEarned);
+            setLessonResult({ passed, correct: prev.correctCount, total: prev.totalHands, wrong: prev.wrongCount, xp: xpEarned });
+            setLearnScreen('result');
+            return prev;
+          }
+
           const prevCrown = progress[activeLessonId]?.crown || 0;
           let newCrown = 1;
           if (prev.wrongCount === 0) newCrown = 3;

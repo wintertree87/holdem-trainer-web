@@ -1,92 +1,107 @@
-# QA 체크리스트 — 피드백 반영 (2026-02-16)
+# QA 체크리스트 — 커리큘럼 재정비 (2026-02-18)
 
 ## 빌드 상태
-- [x] `npm run build` 성공 (TypeScript 에러 없음, 12페이지 생성)
+- [x] `npm run build` 성공 (TypeScript 컴파일 + 정적 페이지 생성 완료)
+
+---
 
 ## 브라우저 자동 테스트 결과
 
 | 시나리오 | 결과 | 스크린샷 | 비고 |
 |---------|------|---------|------|
-| 로그인 페이지 로드 | PASS | `docs/screenshots/01-login.png` | 200 OK, 정상 렌더링 |
-| 온보딩 퀴즈 시작 | PASS | `docs/screenshots/03-onboarding-quiz.png` | 정상 진입 |
-| 정답 피드백 톤 확인 | PASS | `docs/screenshots/05-correct-answer-feedback.png` | "좋은 판단이에요" 표시 |
-| 자동 넘김 제거 확인 | PASS | `docs/screenshots/06-no-auto-advance.png` | 4초 후에도 같은 화면 유지 |
-| 오답 피드백 톤 확인 | PASS | `docs/screenshots/07-wrong-answer-feedback.png` | "이번엔 아쉽네요" 표시 |
+| Root → 온보딩 리다이렉트 | PASS | `docs/screenshots/01-landing-desktop.png` | /onboarding으로 정상 리다이렉트 |
+| 온보딩 페이지 콘텐츠 | PASS | (위와 동일) | "홀덤, 해본 적 있나요?" + 시작하기 버튼 |
+| 로그인 페이지 | PASS | `docs/screenshots/02-login-desktop.png` | 카카오/구글 로그인 + 기능 소개 |
+| 모바일 온보딩 (390x844) | PASS | `docs/screenshots/03-onboarding-mobile.png` | 반응형 레이아웃 정상 |
+| 모바일 로그인 (390x844) | PASS | `docs/screenshots/04-login-mobile.png` | 터치 타겟 충분, 레이아웃 정상 |
 
 - 콘솔 에러: **0개**
-- 총 **5개** 시나리오 중 **5개** 통과
+- 콘솔 경고: **0개**
+- 총 5개 시나리오 중 **5개 통과**
 
-> 자유연습, 스킬트리, 봇 대전은 로그인 필요 → 코드 정적 검증으로 대체
+> **참고**: 스킬트리/퀴즈/결과 화면은 로그인 필요 → PO 수동 테스트 필요
 
-## 핵심 플로우 체크리스트 (코드 레벨 검증)
+---
 
-### Step 1: UX 버그/불편 수정
+## 데이터 마이그레이션 검증
+- [x] DB lesson_id 39개 전부 새 skill-tree.ts에 존재하는 ID와 일치
+- [x] 신규 유닛(17-x, 18-x, 19-boss)은 DB에 없음 = 정상 (아직 아무도 플레이 안 함)
+- [x] 보스전 ID 형식(3-boss, 7-boss 등) 정상 매핑
 
-- [x] **1-1. 해설 자동 넘김 제거** (LessonQuiz.tsx)
-  - `autoAdvanceRef`, `countdownRef`, `countdown` state 모두 삭제됨
-  - 카운트다운 UI 텍스트 (`{countdown}초 후 자동 넘김`) 삭제됨
-  - 정답/오답 모두 동일하게 "다음"/"계속" 버튼으로만 진행
-  - 키보드 단축키(Space/Enter) 그대로 동작
+---
 
-- [x] **1-2. 자유연습 스크롤 문제 해결** (PracticeTab.tsx)
-  - `resultRef` + `scrollIntoView({ behavior: 'smooth', block: 'nearest' })` 추가
-  - RangeChart → "레인지 보기 ▼" 토글 버튼으로 변경 (기본 접힘)
-  - `showRange` state + `setShowRange(false)` 새 핸드 시 초기화
+## CPO 리뷰 — 서비스 흐름 로직
 
-- [x] **1-3. 승단시험 버튼 버그 수정** (SkillTree.tsx)
-  - `animate-slide-in` + `animationDelay` 제거 (opacity:0 상태에서 클릭 불가 원인)
-  - 버튼 스타일 강화: amber 테두리/배경 + 더 큰 터치 타겟 (py-3, text-sm font-bold)
-  - `e.stopPropagation()` 유지 (부모 아코디언과 충돌 방지)
+| 체크 항목 | 결과 | 이슈 & 제안 |
+|-----------|------|-------------|
+| 유저 여정 논리적 흐름 | OK | 챕터→유닛→레슨→보스 자연스러움 |
+| 빈 상태 처리 | OK | Unit 0이 항상 current, 첫 방문 막히지 않음 |
+| 에러 상태 복구 경로 | OK | 모든 실패에 "다시 도전" + "스킬트리로" 버튼 존재 |
+| 전환 포인트 이탈 요소 | OK | 없음 |
+| **최종 유닛 엔딩 없음** | **이슈** | Unit 20 마지막 레슨 완료 시 "전 챕터 클리어!" 같은 최종 화면 없음 |
+| **보스전 실패 시 복습 가이드 없음** | **이슈** | 보스전 실패 후 "어떤 유닛을 복습해야 하는지" 힌트 없음 |
+| 숫자/계산 로직 | OK | 챕터 진행률, XP 계산 모두 상식적 |
+| 핵심 가치 전달 | OK | 듀오링고 스타일 유지 (짧은 레슨, 즉각 피드백, 게이미피케이션) |
+| 기존 유저 데이터 매핑 | **확인완료** | DB 39개 lesson_id 전부 새 구조에 매핑됨 |
 
-### Step 2: 톤/콘텐츠 개선
+---
 
-- [x] **2-1. 퀴즈 피드백 톤 성인화**
-  - LessonQuiz.tsx: "나이스!" → "좋은 판단이에요", "On Fire!" → "완벽한 흐름!", "좋은 흐름!" → "연속 정답!", "아쉬운 판단!" → "이번엔 아쉽네요"
-  - DailyHand.tsx: "나이스!" → "정답!", "아쉬운 판단" → "아쉽네요"
-  - Combo streak: "On Fire! N Streak!" → "N연속 정답!"
+## Designer 리뷰 — UX & 라이팅
 
-- [x] **2-2. 워딩 다듬기**
-  - scenario.ts: "이길 확률이 높은 패" → "상위권 핸드", "약하지만" → "부족하지만", "불리해요" → "부족해요"
-  - constants.ts: POSITION_INFO "좋은 패만 플레이" → "상위 핸드만 플레이", "절반 이상의 패로 공격" → "절반 이상의 핸드로 플레이"
+| 체크 항목 | 결과 | 이슈 & 제안 |
+|-----------|------|-------------|
+| 버튼 텍스트 명확성 | 이슈 | "한번에" → "한 번에" 맞춤법. 버튼 텍스트 과도 → 축약 |
+| 안내 문구 유저 눈높이 | OK | 복습 추천, 보스 도전하기 등 적절 |
+| 에러 메시지 품질 | 이슈 | "다시 도전하세요!" 명령형 → "이번엔 아쉬웠어요" 공감형 |
+| CTA 시각적 우선순위 | 이슈 | 피드백 다음 버튼 작음 → w-full py-3.5로 확장 |
+| 화면 간 일관성 | OK | 색상 체계 직관적 |
+| 액션 피드백 | OK | 피드백 루프 빠름 |
+| 모바일 터치 타겟 | 이슈(미세) | X 닫기 버튼 ~32px (권장 44px 미달) |
 
-- [x] **2-3. 약어 인라인 설명 강화**
-  - skill-tree.ts guideTip: IP(In Position, 유리한 자리), OOP(Out Of Position, 불리한 자리), RFI(Raise First In, 첫 번째 레이즈), EP(Early Position, 앞자리), MP(Middle Position, 중간자리)
+---
 
-- [x] **2-4. 자유연습 모드별 목적 설명 추가**
-  - PracticeTab.tsx: 4개 모드별 한 줄 설명 표시
-  - RFI: "아무도 베팅 안 했을 때, 내 핸드로 레이즈할지 폴드할지 연습"
-  - Facing RFI: "상대가 레이즈했을 때, 콜/3bet/폴드 판단 연습"
-  - vs 3bet: "내가 레이즈 후 상대가 리레이즈(3bet) 했을 때 대응 연습"
-  - C-bet: "플랍에서 C-bet(컨티뉴에이션 벳)할지 체크할지 연습"
+## Supabase 보안 (기존 것, 이번 변경과 무관)
 
-### Step 3: 봇 대전 UI 다듬기
+### 보안 Advisory (WARN 5개)
+- Function search_path mutable: `notify_feedback`, `send_daily_report`, `handle_new_user`
+- RLS 항상 true: `blog_comments` INSERT
+- Leaked password protection 비활성화 (OAuth 전용이라 낮은 영향)
 
-- [x] **3-1. 플레이어 구분 명확화** (GameTable.tsx)
-  - "나" 영역: bg-yellow-500/10 → bg-yellow-500/20 + shadow 글로우 효과
-  - "나" 라벨: text-gray-300 → text-yellow-300 (색상 차별화)
+### 성능 Advisory (WARN 28개, INFO 5개)
+- RLS initplan 최적화 필요 (auth.uid() → (select auth.uid())) — 14명 규모에서 무시 가능
+- Unindexed FK 3개, Unused index 2개 — 소규모라 무시 가능
 
-- [x] **3-2. 액션 토스트 노출 시간** (globals.css)
-  - action-toast 2s → 3s, 키프레임 비율 조정 (10%/80%)
+> 모두 기존 이슈. 커리큘럼 재정비로 인한 신규 보안/성능 문제 없음.
 
-- [x] **3-3. 미세 조정** (globals.css)
-  - 베팅 칩 애니메이션: 0.35s → 0.5s
-  - 활성 플레이어 펄스: 투명도/글로우 강화 (0.3→0.4, 0.6→0.8, box-shadow 12px)
+---
 
-## Supabase 보안 (기존 이슈 — 이번 변경과 무관)
+## PO 수동 테스트 필요 항목
 
-- [x] RLS 활성화: 모든 주요 테이블에 RLS 적용됨
-- 기존 WARN 4건 (이번 변경과 무관, 별도 백로그):
-  - `notify_feedback`, `send_daily_report`, `handle_new_user` — search_path 미설정
-  - `blog_comments` INSERT — RLS always true
-  - Leaked password protection 비활성화
-- 성능 WARN: RLS `auth.uid()` → `(select auth.uid())` 최적화 필요 (기존 이슈, 42명 규모에서 문제 없음)
+> 로그인 후 아래 항목을 직접 확인해주세요:
 
-## PO 확인 항목
+- [ ] **스킬트리 챕터 표시**: 6개 챕터 헤더 + 진행률 바가 보이는가?
+- [ ] **보스 유닛 비주얼**: 금색 테두리 + 큰 원형이 일반 유닛과 구분되는가?
+- [ ] **복습 인디케이터**: 7일 이상 된 완료 레슨에 주황색 표시가 보이는가?
+- [ ] **새 퀴즈 타입 동작**: C벳/턴/리버/사이징 퀴즈가 카드와 함께 잘 표시되는가?
+- [ ] **보스전 플레이**: 챕터 1 보스전을 도전해보고, 통과 시 축하 화면이 나오는가?
+- [ ] **유닛 클리어 축하**: 유닛 마지막 레슨 완료 시 "유닛 클리어!" + 컨페티가 나오는가?
 
-> 아래 항목은 로그인 후 직접 확인이 필요합니다:
+---
 
-- [ ] **레슨 퀴즈**: 정답 시 자동 넘김 없이 "다음" 버튼만 동작하는지
-- [ ] **자유연습**: 결과 나왔을 때 자동 스크롤 + "레인지 보기" 토글 동작
-- [ ] **승단시험**: 진행 중 유닛에서 승급전 버튼 정상 클릭
-- [ ] **봇 대전**: "나" 영역이 더 눈에 띄는지, 토스트가 더 오래 보이는지
-- [ ] **워딩**: 각 화면에서 어색한 표현 없는지 (자유연습, 레슨 해설)
+## 종합 판단
+
+### 런칭 블로커 (즉시 수정): 1개
+1. **C1**: 전체 완료 엔딩 없음 (Unit 20-3 완료 시 "전 코스 클리어!" 화면 필요)
+
+### 즉시 수정 권장 (퀄리티): 4개
+2. **H1**: 진행률 텍스트 가독성 (10px → 12px)
+3. **H2**: 피드백 다음 버튼 크기 (py-2.5 → py-3.5)
+4. **H3**: "한번에" → "한 번에" 맞춤법
+5. **H4**: 실패 타이틀 "다시 도전하세요!" → "이번엔 아쉬웠어요"
+
+### 다음 이터레이션: 6개
+- C2 보스전 실패 복습 가이드
+- M1 완료 보스 animate-float 유지
+- M2 보스 실패 전용 카피
+- M3 X 닫기 버튼 터치 타겟
+- M4 실패 시 버튼 지연 단축

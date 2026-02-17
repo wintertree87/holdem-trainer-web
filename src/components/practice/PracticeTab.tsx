@@ -6,6 +6,7 @@ import { RFI_RANGES, FACING_RFI_RANGES, VS_3BET_RANGES } from '@/data/ranges';
 import { generateHand, getHandNotation, getHandDescription } from '@/utils/hand';
 import { getCorrectAction_RFI, getCorrectAction_Facing, getCorrectAction_Vs3bet } from '@/utils/correct-action';
 import { generateFlop, analyzeBoardTexture, evaluateHandStrength, type BoardTexture, type HandStrength } from '@/utils/board';
+import { generateRfiExplanation, generateFacingExplanation, generateVs3betExplanation, generateCbetExplanation } from '@/utils/scenario';
 import { useSound } from '@/hooks/useSound';
 import { shuffleArray } from '@/utils/shuffle';
 import PokerTable from '@/components/PokerTable';
@@ -112,13 +113,32 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
     else correctAction = getCorrectAction_Vs3bet(notation, position);
 
     const isCorrect = action === correctAction;
+
+    let explanation: string;
+    if (mode === 'rfi') {
+      explanation = generateRfiExplanation(notation, position, correctAction);
+    } else if (mode === 'facing') {
+      const key = `${position}_vs_${vsPosition}`;
+      const range = FACING_RFI_RANGES[key] || {};
+      explanation = generateFacingExplanation(notation, position, vsPosition!, correctAction, range);
+    } else if (mode === 'vs3bet') {
+      const key = position === 'SB' ? 'SB_vs_BB_3bet' : `${position}_vs_3bet`;
+      const range = VS_3BET_RANGES[key] || {};
+      explanation = generateVs3betExplanation(notation, position, correctAction, range);
+    } else {
+      explanation = generateCbetExplanation(
+        notation,
+        position,
+        handStrength || { category: 'air', name: '에어', shouldCbet: false, reason: '', hasDraws: false, draws: [] },
+        boardTexture || { tags: [], isDry: false, isWet: false, favorsCbet: 50 },
+      );
+    }
+
     setResult({
       correct: isCorrect,
       action: correctAction,
       myAction: action,
-      explanation: isCorrect
-        ? `정답! ${ACTION_NAMES[correctAction]}이(가) 맞습니다.`
-        : `오답. 정답은 ${ACTION_NAMES[correctAction]}입니다.`,
+      explanation,
     });
 
     if (isCorrect) {
@@ -263,7 +283,7 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
               <div className={`text-base font-bold mb-1 ${result.correct ? 'text-green-400' : 'text-red-400'}`}>
                 {result.correct ? '정답!' : '오답!'}
               </div>
-              <div className="text-sm text-gray-300">{result.explanation}</div>
+              <div className="text-sm text-gray-300 whitespace-pre-line leading-relaxed">{result.explanation}</div>
 
               {/* Range Chart Toggle (RFI/Facing/vs3bet only) */}
               {mode !== 'cbet' && (

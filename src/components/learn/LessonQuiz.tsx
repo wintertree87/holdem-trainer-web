@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { generateHandFromNotation } from '@/utils/hand';
-import { SUIT_NAMES } from '@/data/constants';
+import { SUIT_NAMES, type Card } from '@/data/constants';
 import { useSound } from '@/hooks/useSound';
 import PokerTable from '@/components/PokerTable';
 import GlossaryTip from '@/components/GlossaryTip';
@@ -12,7 +12,7 @@ import HeartDisplay from '@/components/HeartDisplay';
 import type { Scenario } from '@/data/skill-tree';
 
 type LessonState = {
-  scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
+  scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string; boardCards?: Card[]; handCards?: Card[] })[];
   currentIndex: number;
   correctCount: number;
   wrongCount: number;
@@ -99,6 +99,8 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
   if (!scenario) return null;
 
   const isDynamic = scenario.quizType === 'rfi_dynamic' || scenario.quizType === 'facing_dynamic' || scenario.quizType === 'vs3bet_dynamic';
+  const isPostFlop = scenario.quizType === 'board_texture' || scenario.quizType === 'hand_strength';
+  const isActionQuiz = scenario.quizType === 'cbet_dynamic' || scenario.quizType === 'turn_dynamic' || scenario.quizType === 'river_dynamic' || scenario.quizType === 'sizing_dynamic';
   const rangeMode = scenario.quizType === 'facing_dynamic' ? 'facing' : scenario.quizType === 'vs3bet_dynamic' ? 'vs3bet' : 'rfi';
 
   return (
@@ -151,6 +153,10 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
       <div className={`bg-white/5 rounded-2xl p-6 mb-4 min-h-[300px] ${shakeCard && !isCorrect ? 'animate-shake' : ''}`}>
         {isDynamic && scenario.hand ? (
           <DynamicScenario scenario={scenario} answered={answered} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />
+        ) : isActionQuiz && scenario.boardCards && scenario.handCards ? (
+          <CbetScenario scenario={scenario} answered={answered} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />
+        ) : isPostFlop && scenario.boardCards ? (
+          <PostFlopScenario scenario={scenario} answered={answered} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />
         ) : (
           <IdentifyScenario scenario={scenario} answered={answered} selectedAnswer={selectedAnswer} onAnswer={handleAnswer} />
         )}
@@ -174,8 +180,8 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
             />
           )}
 
-          <div className="text-center mt-3">
-            <button onClick={handleNext} className="px-8 py-2.5 bg-indigo-500 rounded-lg text-white text-sm font-bold hover:bg-indigo-600 transition">
+          <div className="mt-3">
+            <button onClick={handleNext} className="w-full py-3.5 bg-indigo-500 rounded-xl text-white text-[15px] font-bold hover:bg-indigo-600 transition">
               {isCorrect ? '다음' : '계속'}
             </button>
           </div>
@@ -239,6 +245,101 @@ function IdentifyScenario({ scenario, answered, selectedAnswer, onAnswer }: {
       <div className="text-center text-base font-bold text-gray-200 mb-5 leading-6"><AutoGlossary text={scenario.question || ''} /></div>
       <OptionButtons options={scenario.options} answer={scenario.answer} answered={answered} selectedAnswer={selectedAnswer} onAnswer={onAnswer} />
     </>
+  );
+}
+
+function CbetScenario({ scenario, answered, selectedAnswer, onAnswer }: {
+  scenario: { position?: string; vsPosition?: string; hand?: string; boardCards?: Card[]; handCards?: Card[]; question?: string; options: string[]; answer: string };
+  answered: boolean; selectedAnswer: string; onAnswer: (a: string) => void;
+}) {
+  return (
+    <>
+      {/* Position badge */}
+      <div className="text-center mb-3">
+        <GlossaryTip term={scenario.position!}>
+          <span className="inline-block bg-indigo-500 text-white px-4 py-1 rounded-full text-sm font-bold">{scenario.position}</span>
+        </GlossaryTip>
+      </div>
+      {/* Poker table */}
+      <PokerTable heroPosition={scenario.position!} villainPosition={scenario.vsPosition} className="mb-3" />
+      {/* Hand cards */}
+      <div className="flex justify-center items-center gap-2 mb-2">
+        <span className="text-[11px] text-gray-500 mr-1">핸드</span>
+        {scenario.handCards!.map((card, i) => (
+          <CardVisual key={`h${i}`} card={card} delay={i * 0.1} />
+        ))}
+      </div>
+      {/* Board cards — flop grouped, turn/river separated */}
+      <div className="flex justify-center items-center gap-2 mb-4">
+        <span className="text-[11px] text-gray-500 mr-1">
+          {(scenario.boardCards?.length ?? 0) <= 3 ? '플랍' : (scenario.boardCards?.length ?? 0) === 4 ? '턴' : '보드'}
+        </span>
+        {scenario.boardCards!.slice(0, 3).map((card, i) => (
+          <CardVisual key={`b${i}`} card={card} delay={0.2 + i * 0.12} size="lg" />
+        ))}
+        {(scenario.boardCards?.length ?? 0) > 3 && (
+          <>
+            <div className="w-1.5" />
+            {scenario.boardCards!.slice(3).map((card, i) => (
+              <CardVisual key={`e${i}`} card={card} delay={0.56 + i * 0.12} size="lg" />
+            ))}
+          </>
+        )}
+      </div>
+      {/* Question */}
+      <div className="text-center text-base font-bold text-gray-200 mb-5 leading-6">
+        <AutoGlossary text={scenario.question || ''} />
+      </div>
+      <OptionButtons options={scenario.options} answer={scenario.answer} answered={answered} selectedAnswer={selectedAnswer} onAnswer={onAnswer} />
+    </>
+  );
+}
+
+function PostFlopScenario({ scenario, answered, selectedAnswer, onAnswer }: {
+  scenario: { show?: string; question?: string; options: string[]; answer: string; boardCards?: Card[]; handCards?: Card[] };
+  answered: boolean; selectedAnswer: string; onAnswer: (a: string) => void;
+}) {
+  return (
+    <>
+      {/* Hand cards */}
+      {scenario.handCards && (
+        <div className="flex justify-center items-center gap-2 mb-2">
+          <span className="text-[11px] text-gray-500 mr-1">핸드</span>
+          {scenario.handCards.map((card, i) => (
+            <CardVisual key={`h${i}`} card={card} delay={i * 0.1} />
+          ))}
+        </div>
+      )}
+      {/* Board cards */}
+      {scenario.boardCards && (
+        <div className="flex justify-center items-center gap-2 mb-4">
+          <span className="text-[11px] text-gray-500 mr-1">보드</span>
+          {scenario.boardCards.map((card, i) => (
+            <CardVisual key={`b${i}`} card={card} delay={(scenario.handCards ? 2 : 0) * 0.1 + i * 0.12} size="lg" />
+          ))}
+        </div>
+      )}
+      {/* Question */}
+      <div className="text-center text-base font-bold text-gray-200 mb-5 leading-6">
+        <AutoGlossary text={scenario.question || ''} />
+      </div>
+      <OptionButtons options={scenario.options} answer={scenario.answer} answered={answered} selectedAnswer={selectedAnswer} onAnswer={onAnswer} />
+    </>
+  );
+}
+
+function CardVisual({ card, delay = 0, size = 'sm' }: { card: Card; delay?: number; size?: 'sm' | 'lg' }) {
+  const isRed = card.suit === '♥' || card.suit === '♦';
+  return (
+    <div
+      className={`animate-card-deal bg-white rounded-lg flex flex-col items-center justify-center font-bold shadow-lg ${
+        isRed ? 'text-red-600' : 'text-gray-800'
+      } ${size === 'lg' ? 'w-[58px] h-[80px]' : 'w-[50px] h-[70px]'}`}
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <div className={size === 'lg' ? 'text-xl' : 'text-lg'}>{card.rank}</div>
+      <div className={size === 'lg' ? 'text-2xl -mt-1' : 'text-xl -mt-1'}>{card.suit}</div>
+    </div>
   );
 }
 

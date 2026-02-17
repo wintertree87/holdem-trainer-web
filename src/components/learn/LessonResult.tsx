@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { SKILL_TREE } from '@/data/skill-tree';
+import { SKILL_TREE, CHAPTERS } from '@/data/skill-tree';
 import { getPracticeGameConfig } from '@/data/practice-game-config';
 import { useSound } from '@/hooks/useSound';
 import ShareButton from '@/components/ShareButton';
@@ -26,9 +26,13 @@ type Props = {
 
 export default function LessonResult({ passed, correct, total, wrong, xp, lessonId, unitId, onStartLesson, onBackToTree, onStartPracticeGame, isLessonUnlocked, isTestOut, levelTitle, levelNumber }: Props) {
   const unit = SKILL_TREE.find(u => u.id === unitId);
+  const isBossResult = unit?.isBoss ?? false;
+  const chapter = isBossResult ? CHAPTERS.find(c => c.bossUnitId === unitId) : null;
   const lessonIdx = unit?.lessons.findIndex(l => l.id === lessonId) ?? -1;
   const nextLesson = unit?.lessons[lessonIdx + 1];
-  const nextUnit = SKILL_TREE.find(u => u.id === unitId + 1);
+  // For boss: next unit is first unit of next chapter
+  const unitIndex = SKILL_TREE.findIndex(u => u.id === unitId);
+  const nextUnit = unitIndex >= 0 && unitIndex < SKILL_TREE.length - 1 ? SKILL_TREE[unitIndex + 1] : null;
   const [showButtons, setShowButtons] = useState(false);
   const [showXP, setShowXP] = useState(false);
   const firedRef = useRef(false);
@@ -43,19 +47,19 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
       setTimeout(() => {
         playConfettiSound();
         confetti({
-          particleCount: isPerfect ? 120 : 60,
-          spread: isPerfect ? 80 : 60,
+          particleCount: isUnitClear ? 150 : isPerfect ? 120 : 60,
+          spread: isUnitClear ? 100 : isPerfect ? 80 : 60,
           origin: { y: 0.6 },
-          colors: isPerfect ? ['#ffd700', '#ffaa00', '#fff'] : undefined,
-          shapes: isPerfect ? ['star', 'circle'] : undefined,
+          colors: isUnitClear ? ['#a855f7', '#6366f1', '#ffd700', '#fff'] : isPerfect ? ['#ffd700', '#ffaa00', '#fff'] : undefined,
+          shapes: isUnitClear || isPerfect ? ['star', 'circle'] : undefined,
         });
-        if (isPerfect) {
+        if (isUnitClear || isPerfect) {
           setTimeout(() => {
             confetti({
-              particleCount: 80,
+              particleCount: isUnitClear ? 100 : 80,
               spread: 100,
               origin: { y: 0.5 },
-              colors: ['#ffd700', '#ffaa00', '#fff'],
+              colors: isUnitClear ? ['#a855f7', '#6366f1', '#ffd700'] : ['#ffd700', '#ffaa00', '#fff'],
               shapes: ['star'],
             });
           }, 400);
@@ -77,16 +81,39 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
       ? `\uD83C\uDF1F 퍼펙트! "${unitName}" 레슨 만점 클리어!${levelTag}`
       : `\uD83C\uDFAF 홀덤 트레이너에서 "${unitName}" 레슨 클리어! 정답률 ${accuracy}%${levelTag}`;
 
-  const emoji = isTestOut
+  // Detect unit completion (last lesson of non-boss unit, passed)
+  const isUnitClear = passed && !isBossResult && !isTestOut && !nextLesson && unit && unit.lessons.length > 1;
+  // Detect all-course completion (last unit, no next unit, passed)
+  const isAllComplete = passed && !nextUnit && !nextLesson && !isBossResult && !isTestOut;
+
+  const emoji = isAllComplete
+    ? '👑'
+    : isBossResult
     ? (passed ? '🏆' : '📚')
+    : isTestOut
+    ? (passed ? '🏆' : '📚')
+    : isUnitClear
+    ? '🎊'
     : (passed ? (wrong === 0 ? '🌟' : '🎉') : '💔');
 
-  const title = isTestOut
+  const title = isAllComplete
+    ? '전 코스 클리어!'
+    : isBossResult
+    ? (passed ? `${chapter?.title || '챕터'} 클리어!` : '아쉽지만 다음에...')
+    : isTestOut
     ? (passed ? '승급 성공!' : '아쉽지만 다음에...')
-    : (passed ? (wrong === 0 ? '퍼펙트!' : '레슨 완료!') : '다시 도전하세요!');
+    : isUnitClear
+    ? '유닛 클리어!'
+    : (passed ? (wrong === 0 ? '퍼펙트!' : '레슨 완료!') : '이번엔 아쉬웠어요');
 
-  const subtitle = isTestOut
+  const subtitle = isAllComplete
+    ? '축하합니다! 모든 챕터를 정복했습니다. 당신은 진정한 홀덤 고수!'
+    : isBossResult
+    ? (passed ? `${chapter?.title || ''} 챕터를 정복했습니다!` : '한 판 한 판 경험을 쌓으면 돼요!')
+    : isTestOut
     ? (passed ? '유닛의 모든 레슨이 완료되었습니다' : '한 판 한 판 경험을 쌓으면 돼요!')
+    : isUnitClear
+    ? `"${unit?.title}" 유닛을 정복했습니다!`
     : (!passed ? '아쉬운 판이었지만, 다음엔 더 잘할 수 있어요!' : null);
 
   return (
