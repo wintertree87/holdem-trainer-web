@@ -5,7 +5,7 @@ import { type MPMatchState } from '@/hooks/useMultiplayerSession';
 import { type GameAction } from '@/engine/pot-manager';
 import { type PlayerId } from '@/engine/mp-pot-manager';
 import { type MPActionRecord, getNextToAct, getHeroMPActions, getPlayerBet } from '@/engine/mp-game-state';
-import { STARTING_STACK } from '@/data/game-config';
+import { STARTING_STACK, HANDS_PER_MATCH } from '@/data/game-config';
 import CommunityCards, { HoleCards } from './CommunityCards';
 import GameActions from './GameActions';
 import MPShowdownResult from './MPShowdownResult';
@@ -331,14 +331,30 @@ export default function MPGameTable({ match, showResult, onHeroAction, onShowRes
       </div>
 
       {/* Showdown overlay */}
-      {handIsOver && showResult && hand.result && (
-        <MPShowdownResult
-          result={hand.result}
-          players={hand.players}
-          communityCards={hand.communityCards}
-          onNext={onNextHand}
-        />
-      )}
+      {handIsOver && showResult && hand.result && (() => {
+        // Calculate if hero will bust after this hand
+        const heroPreStack = match.players.find(p => p.id === 'hero')?.stack ?? 0;
+        const heroBetState = hand.bets.players.find(b => b.id === 'hero');
+        const heroInvested = heroBetState?.totalInvested ?? 0;
+        const heroWinnings = hand.result!.pots.reduce((sum, pot) => {
+          if (pot.winners.includes('hero')) return sum + pot.amount / pot.winners.length;
+          return sum;
+        }, 0);
+        const heroNewStack = heroPreStack - heroInvested + heroWinnings;
+        const heroBusted = heroNewStack <= 0;
+        const isLastHand = match.handNumber >= HANDS_PER_MATCH;
+
+        return (
+          <MPShowdownResult
+            result={hand.result!}
+            players={hand.players}
+            communityCards={hand.communityCards}
+            heroBusted={heroBusted}
+            isLastHand={isLastHand}
+            onNext={onNextHand}
+          />
+        );
+      })()}
     </div>
   );
 }

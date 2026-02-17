@@ -19,6 +19,8 @@ type Props = {
   result: MPGameResult;
   players: PlayerState[];
   communityCards: Card[];
+  heroBusted: boolean;
+  isLastHand: boolean;
   onNext: () => void;
 };
 
@@ -26,9 +28,10 @@ function fmt(n: number): string {
   return n % 1 === 0 ? `$${n}` : `$${n.toFixed(1)}`;
 }
 
-export default function MPShowdownResult({ result, players, communityCards, onNext }: Props) {
+export default function MPShowdownResult({ result, players, communityCards, heroBusted, isLastHand, onNext }: Props) {
   const heroWon = result.pots.some(p => p.winners.includes('hero'));
   const isFoldWin = !!result.wonByFold;
+  const matchEnding = heroBusted || isLastHand;
 
   // Calculate total won per player
   const winnings = new Map<PlayerId, number>();
@@ -43,9 +46,17 @@ export default function MPShowdownResult({ result, players, communityCards, onNe
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-fade-in" onClick={onNext}>
       <div className="bg-gray-900 rounded-2xl p-5 max-w-[360px] w-full mx-4 text-center max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         {/* Result */}
-        <div className={`text-3xl font-black mb-2 ${heroWon ? 'text-green-400' : 'text-red-400'}`}>
-          {heroWon ? 'WIN!' : 'LOSE'}
+        {heroBusted && (
+          <div className="text-4xl mb-1">💀</div>
+        )}
+        <div className={`text-3xl font-black mb-2 ${
+          heroBusted ? 'text-red-400' : heroWon ? 'text-green-400' : 'text-red-400'
+        }`}>
+          {heroBusted ? '파산!' : heroWon ? 'WIN!' : 'LOSE'}
         </div>
+        {heroBusted && (
+          <div className="text-sm text-red-300/70 mb-1">스택이 바닥났습니다. 매치가 종료됩니다.</div>
+        )}
 
         {/* Summary */}
         <div className="text-sm text-gray-400 mb-3">
@@ -110,9 +121,11 @@ export default function MPShowdownResult({ result, players, communityCards, onNe
 
         <button
           onClick={onNext}
-          className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 rounded-xl text-white text-sm font-bold transition active:scale-95"
+          className={`w-full py-3 rounded-xl text-white text-sm font-bold transition active:scale-95 ${
+            matchEnding ? 'bg-gray-600 hover:bg-gray-500' : 'bg-indigo-500 hover:bg-indigo-600'
+          }`}
         >
-          다음 핸드
+          {matchEnding ? '결과 보기' : '다음 핸드'}
         </button>
       </div>
     </div>
