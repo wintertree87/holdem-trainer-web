@@ -11,7 +11,7 @@ import { useSound } from '@/hooks/useSound';
 import { useStreak } from '@/hooks/useStreak';
 import { useLessonFlow } from '@/hooks/useLessonFlow';
 import { useHearts } from '@/hooks/useHearts';
-import { useGameSession, type MatchResult } from '@/hooks/useGameSession';
+import { useMultiplayerSession, type MPMatchResult } from '@/hooks/useMultiplayerSession';
 import { usePracticeGame } from '@/hooks/usePracticeGame';
 import { type GameTier } from '@/data/game-config';
 import { createClient } from '@/lib/supabase-browser';
@@ -38,6 +38,8 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import GameTab from '@/components/game/GameTab';
 import GameTable from '@/components/game/GameTable';
 import MatchSummary from '@/components/game/MatchSummary';
+import MPGameTable from '@/components/game/MPGameTable';
+import MPMatchSummary from '@/components/game/MPMatchSummary';
 import PracticeGameResult from '@/components/learn/PracticeGameResult';
 import DailyHand from '@/components/DailyHand';
 
@@ -61,7 +63,7 @@ export default function Home() {
 
   const heartsHook = useHearts();
   const lesson = useLessonFlow({ progress, updateLesson, addXP, consumeHeart: heartsHook.consumeHeart, canStartLesson: heartsHook.canStartLesson });
-  const game = useGameSession();
+  const game = useMultiplayerSession();
   const practiceGame = usePracticeGame();
   const [practiceXpEarned, setPracticeXpEarned] = useState(0);
 
@@ -158,15 +160,16 @@ export default function Home() {
   }, [user, game.matchResult]);
 
   // Save match result to Supabase
-  const saveMatchResult = useCallback(async (result: MatchResult, xp: number) => {
+  const saveMatchResult = useCallback(async (result: MPMatchResult, xp: number) => {
     if (!user) return;
     const supabase = createClient();
+    const winner = result.bbWon > 0 ? 'hero' : result.bbWon < 0 ? 'bot' : 'tie';
     await supabase.from('game_stats').insert({
       user_id: user.id,
       tier: result.tier.id,
-      result: result.winner,
+      result: winner,
       hero_final_stack: result.heroFinalStack,
-      bot_final_stack: result.botFinalStack,
+      bot_final_stack: 100, // legacy field, not meaningful for 6-max
       hands_played: result.handsPlayed,
       xp_earned: xp,
     });
@@ -194,7 +197,8 @@ export default function Home() {
   useEffect(() => {
     if (!game.matchResult || matchXpEarned > 0) return;
     const result = game.matchResult;
-    const xp = result.tier.xpBase + (result.winner === 'hero' ? result.tier.xpWin : 0);
+    const heroWon = result.bbWon > 0;
+    const xp = result.tier.xpBase + (heroWon ? result.tier.xpWin : 0);
     setMatchXpEarned(xp);
     addXP(xp);
     saveMatchResult(result, xp);
@@ -310,11 +314,11 @@ export default function Home() {
     );
   }
 
-  // Game in progress — full-screen game UI
+  // Game in progress — full-screen 6-max game UI
   if (game.match && !game.matchResult) {
     return (
       <div className="max-w-[500px] mx-auto px-4 py-4 min-h-screen">
-        <GameTable
+        <MPGameTable
           match={game.match}
           showResult={game.showResult}
           onHeroAction={game.handleHeroAction}
@@ -326,11 +330,11 @@ export default function Home() {
     );
   }
 
-  // Match complete — show summary
+  // Match complete — show 6-max summary
   if (game.matchResult) {
     return (
       <div className="max-w-[500px] mx-auto px-4 py-4 min-h-screen">
-        <MatchSummary
+        <MPMatchSummary
           result={game.matchResult}
           xpEarned={matchXpEarned}
           onClose={handleEndMatch}
