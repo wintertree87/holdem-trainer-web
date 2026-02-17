@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { SKILL_TREE } from '@/data/skill-tree';
 import { generateRfiScenarios, generateFacingScenarios, generateVs3betScenarios, generateTestOutScenarios } from '@/utils/scenario';
+import { shuffleArray } from '@/utils/shuffle';
 import type { Scenario } from '@/data/skill-tree';
 import type { LessonData } from '@/hooks/useProgress';
 
@@ -121,7 +122,7 @@ export function useLessonFlow({ progress, updateLesson, addXP, consumeHeart, can
     if (!lesson) return;
 
     let scenarios: (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[];
-    const warmup = (lesson.scenarios || []).map(s => ({ ...s, quizType: 'identify' as const }));
+    const warmup = (lesson.scenarios || []).map(s => ({ ...s, quizType: 'identify' as const, options: shuffleArray(s.options) }));
 
     if (lesson.quizType === 'rfi_dynamic' && lesson.positions) {
       const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
@@ -133,7 +134,7 @@ export function useLessonFlow({ progress, updateLesson, addXP, consumeHeart, can
       const dynamicCount = Math.max(1, lesson.handCount - warmup.length);
       scenarios = [...warmup, ...generateVs3betScenarios(lesson.positions, dynamicCount)];
     } else {
-      scenarios = (lesson.scenarios || []).map(s => ({ ...s, quizType: lesson.quizType }));
+      scenarios = (lesson.scenarios || []).map(s => ({ ...s, quizType: lesson.quizType, options: shuffleArray(s.options) }));
     }
 
     setLessonState({

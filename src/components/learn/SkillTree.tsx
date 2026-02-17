@@ -1,6 +1,7 @@
 'use client';
 
 import { SKILL_TREE } from '@/data/skill-tree';
+import { getPracticeGameConfig } from '@/data/practice-game-config';
 import type { LessonData } from '@/hooks/useProgress';
 
 type Props = {
@@ -9,11 +10,12 @@ type Props = {
   onToggleUnit: (id: number) => void;
   onStartLesson: (lessonId: string) => void;
   onStartTestOut: (unitId: number) => void;
+  onStartPracticeGame?: (unitId: number) => void;
   getUnitStatus: (unitId: number) => 'locked' | 'current' | 'completed';
   isLessonUnlocked: (unitId: number, lessonId: string) => boolean;
 };
 
-export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartLesson, onStartTestOut, getUnitStatus, isLessonUnlocked }: Props) {
+export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartLesson, onStartTestOut, onStartPracticeGame, getUnitStatus, isLessonUnlocked }: Props) {
   let lastGroup = '';
 
   return (
@@ -110,6 +112,15 @@ export default function SkillTree({ progress, openUnitId, onToggleUnit, onStartL
                     onClick={(e) => { e.stopPropagation(); onStartTestOut(unit.id); }}
                   >
                     🏆 승급전으로 한번에 통과하기
+                  </button>
+                )}
+
+                {status === 'completed' && onStartPracticeGame && getPracticeGameConfig(unit.id) && (
+                  <button
+                    className="w-full mt-3 py-2.5 px-4 border border-indigo-500/30 bg-indigo-500/5 rounded-xl text-indigo-400 text-sm font-bold hover:bg-indigo-500/10 hover:border-indigo-500/50 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                    onClick={(e) => { e.stopPropagation(); onStartPracticeGame(unit.id); }}
+                  >
+                    🎯 실전 연습 (3핸드)
                   </button>
                 )}
               </div>

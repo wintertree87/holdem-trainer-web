@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { SKILL_TREE } from '@/data/skill-tree';
+import { getPracticeGameConfig } from '@/data/practice-game-config';
 import { useSound } from '@/hooks/useSound';
 import ShareButton from '@/components/ShareButton';
 
@@ -16,13 +17,14 @@ type Props = {
   unitId: number;
   onStartLesson: (lessonId: string) => void;
   onBackToTree: () => void;
+  onStartPracticeGame?: (unitId: number) => void;
   isLessonUnlocked: (unitId: number, lessonId: string) => boolean;
   isTestOut?: boolean;
   levelTitle?: string;
   levelNumber?: number;
 };
 
-export default function LessonResult({ passed, correct, total, wrong, xp, lessonId, unitId, onStartLesson, onBackToTree, isLessonUnlocked, isTestOut, levelTitle, levelNumber }: Props) {
+export default function LessonResult({ passed, correct, total, wrong, xp, lessonId, unitId, onStartLesson, onBackToTree, onStartPracticeGame, isLessonUnlocked, isTestOut, levelTitle, levelNumber }: Props) {
   const unit = SKILL_TREE.find(u => u.id === unitId);
   const lessonIdx = unit?.lessons.findIndex(l => l.id === lessonId) ?? -1;
   const nextLesson = unit?.lessons[lessonIdx + 1];
@@ -146,6 +148,11 @@ export default function LessonResult({ passed, correct, total, wrong, xp, lesson
               {passed && !nextLesson && nextUnit && nextUnit.lessons.length > 0 && isLessonUnlocked(nextUnit.id, nextUnit.lessons[0].id) && (
                 <button onClick={() => onStartLesson(nextUnit.lessons[0].id)} className="py-3.5 px-5 bg-gradient-to-br from-indigo-500 to-indigo-400 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
                   다음 유닛: {nextUnit.title}
+                </button>
+              )}
+              {passed && !nextLesson && onStartPracticeGame && getPracticeGameConfig(unitId) && (
+                <button onClick={() => onStartPracticeGame(unitId)} className="py-3.5 px-5 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl text-white text-[15px] font-bold hover:scale-[1.03] active:scale-[0.98] transition">
+                  🎯 실전 연습 (3핸드)
                 </button>
               )}
               {passed && <ShareButton text={shareText} url={shareUrl} />}

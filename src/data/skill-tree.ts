@@ -29,6 +29,7 @@ export type Lesson = {
   guideTip: string;
   positions?: string[];
   scenarios?: Scenario[];
+  guideExample?: string;
 };
 
 export type Unit = {
@@ -187,11 +188,12 @@ export const SKILL_TREE: Unit[] = [
     lessons: [
       { id: '3-1', title: 'UTG 오픈', subtitle: '가장 타이트한 오픈', quizType: 'rfi_dynamic', handCount: 7, maxErrors: 3, positions: ['UTG'],
         guideTip: 'UTG는 가장 먼저 행동하는 자리예요.\n뒤에 8명이나 남아있으니 정말 좋은 패만 골라야 해요.\n베팅할 수 있는 패는 상위 10% 정도뿐!\n레이즈(베팅) 아니면 폴드(포기), 둘 중 하나예요.',
+        guideExample: '✅ 레이즈: AA, KK, QQ, AKs, AKo\n❌ 폴드: KJo, 87s, A3o',
         scenarios: [
           { question: 'UTG(앞자리)에서 좋은 패만 골라야 하는 이유는?', options: ['뒤에 8명이나 남아서 누군가 좋은 패를 가질 확률이 높으니까', '앞자리가 불운해서', '규칙이 그래서'], answer: '뒤에 8명이나 남아서 누군가 좋은 패를 가질 확률이 높으니까', explanation: '핵심이에요! 뒤에 남은 사람이 많을수록, 그 중 한 명이 강한 패를 가지고 다시 올릴 확률이 높아요. 그래서 앞자리에선 정말 좋은 패만 골라야 해요.' }
         ]
       },
-      { id: '3-2', title: 'UTG+1 / UTG+2 오픈', subtitle: '앞자리 조금 넓히기', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['UTG+1', 'UTG+2'], guideTip: 'UTG+1과 UTG+2는 UTG보다 살짝 넓게 플레이해요.\n뒤에 남은 사람이 1~2명 적으니까요.\n하지만 여전히 앞자리! 아직은 좋은 패만 골라야 해요.' },
+      { id: '3-2', title: 'UTG+1 / UTG+2 오픈', subtitle: '앞자리 조금 넓히기', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['UTG+1', 'UTG+2'], guideTip: 'UTG+1과 UTG+2는 UTG보다 살짝 넓게 플레이해요.\n뒤에 남은 사람이 1~2명 적으니까요.\n하지만 여전히 앞자리! 아직은 좋은 패만 골라야 해요.', guideExample: '✅ 레이즈: AQs, TT, KQs\n❌ 폴드: A9o, 76s, KTo' },
       { id: '3-3', title: 'LJ 오픈', subtitle: '중간 자리의 시작', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['LJ'], guideTip: 'LJ부터 중간 자리예요. 뒤에 5명만 남아서 좀 더 넓게 플레이 가능!\n에이스+같은무늬 패가 더 추가되고,\n높은 카드 조합도 더 플레이할 수 있어요.' },
       { id: '3-4', title: '앞자리/중간 종합 드릴', subtitle: 'UTG~LJ 총정리', quizType: 'rfi_dynamic', handCount: 8, maxErrors: 3, positions: ['UTG', 'UTG+1', 'UTG+2', 'LJ'], guideTip: '지금까지 배운 UTG ~ LJ를 섞어서 연습해요.\n핵심: 자리가 뒤로 갈수록 더 많은 패를 플레이할 수 있다!\n같은 패도 자리에 따라 베팅/접기가 달라져요.' }
     ]
@@ -199,9 +201,9 @@ export const SKILL_TREE: Unit[] = [
   {
     id: 4, title: '넓혀가기', subtitle: 'LP 오픈 레인지 (RFI 확장)', emoji: '🔓', group: '프리플랍',
     lessons: [
-      { id: '4-1', title: 'HJ 오픈', subtitle: '중간~뒷자리 경계', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['HJ'], guideTip: 'HJ는 뒤에 4명만 남아서 약 21%의 패를 플레이할 수 있어요.\n작은 페어, 에이스+같은무늬 더 추가!\n점점 공격적으로 갈 수 있는 자리예요.' },
-      { id: '4-2', title: 'CO 오픈', subtitle: '뒷자리 진입', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['CO'], guideTip: 'CO(커톹)는 뒤에 3명만! 약 27%의 패를 플레이해요.\n아주 작은 페어도 OK, 같은 무늬 패 대부분 OK.\n꽤 넓게 공격할 수 있는 좋은 자리예요!' },
-      { id: '4-3', title: 'BTN 오픈', subtitle: '최고의 자리, 최대 범위', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['BTN'], guideTip: 'BTN(버튼)은 최고의 자리! 무려 51%, 절반 이상의 패로 베팅 가능!\n뒤에 블라인드 2명만 남았으니 마음껏 공격하세요.\n여기서 돈을 가장 많이 벌어요!' },
+      { id: '4-1', title: 'HJ 오픈', subtitle: '중간~뒷자리 경계', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['HJ'], guideTip: 'HJ는 뒤에 4명만 남아서 약 21%의 패를 플레이할 수 있어요.\n작은 페어, 에이스+같은무늬 더 추가!\n점점 공격적으로 갈 수 있는 자리예요.', guideExample: '✅ 레이즈: A5s, 77, KJo\n❌ 폴드: K8o, 54s, J7o' },
+      { id: '4-2', title: 'CO 오픈', subtitle: '뒷자리 진입', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['CO'], guideTip: 'CO(커톹)는 뒤에 3명만! 약 27%의 패를 플레이해요.\n아주 작은 페어도 OK, 같은 무늬 패 대부분 OK.\n꽤 넓게 공격할 수 있는 좋은 자리예요!', guideExample: '✅ 레이즈: 22, A2s, K9s, QTo\n❌ 폴드: 72o, J5o, 83o' },
+      { id: '4-3', title: 'BTN 오픈', subtitle: '최고의 자리, 최대 범위', quizType: 'rfi_dynamic', handCount: 6, maxErrors: 3, positions: ['BTN'], guideTip: 'BTN(버튼)은 최고의 자리! 무려 51%, 절반 이상의 패로 베팅 가능!\n뒤에 블라인드 2명만 남았으니 마음껏 공격하세요.\n여기서 돈을 가장 많이 벌어요!', guideExample: '✅ 레이즈: K5s, Q8s, J9o, 33\n❌ 폴드: 72o, 83o, 94o' },
       { id: '4-4', title: '전체 자리 종합 드릴', subtitle: '모든 자리 총정리', quizType: 'rfi_dynamic', handCount: 10, maxErrors: 4, positions: ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN'],
         guideTip: 'UTG부터 BTN까지 모든 자리를 섞어서 연습!\n핵심 질문: 이 패를 이 자리에서 베팅할 것인가?\n자리별 차이를 몸에 익히는 시간이에요.',
         scenarios: [
@@ -263,7 +265,8 @@ export const SKILL_TREE: Unit[] = [
       {
         id: '6-2', title: 'IP에서 Facing RFI', subtitle: '유리한 포지션에서의 대응',
         quizType: 'facing_dynamic', handCount: 8, maxErrors: 3, positions: ['CO', 'BTN'],
-        guideTip: 'IP(In Position)에서는 더 넓게 플레이할 수 있어요.\nCO와 BTN에서 앞자리 오픈을 받았을 때의 대응을 연습합니다.\n3벳 / 콜 / 폴드를 판단하세요.'
+        guideTip: 'IP(In Position)에서는 더 넓게 플레이할 수 있어요.\nCO와 BTN에서 앞자리 오픈을 받았을 때의 대응을 연습합니다.\n3벳 / 콜 / 폴드를 판단하세요.',
+        guideExample: '✅ 3벳: QQ+, AKs (밸류) / A5s (블러프)\n✅ 콜: JJ, AQo, 98s\n❌ 폴드: J3o, 84o'
       },
       {
         id: '6-3', title: 'BB에서 Facing RFI', subtitle: '블라인드 디펜스',
@@ -295,7 +298,8 @@ export const SKILL_TREE: Unit[] = [
       {
         id: '7-2', title: 'EP/MP에서 vs 3bet', subtitle: '앞자리에서 3벳 대응',
         quizType: 'vs3bet_dynamic', handCount: 8, maxErrors: 3, positions: ['UTG', 'LJ', 'HJ'],
-        guideTip: 'EP(Early Position, 앞자리)/MP(Middle Position, 중간자리)에서 오픈했을 때 3벳을 받으면?\n내 오픈 레인지가 타이트하므로 더 넓게 계속할 수 있어요.\n4벳 / 콜 / 폴드를 연습합니다.'
+        guideTip: 'EP(Early Position, 앞자리)/MP(Middle Position, 중간자리)에서 오픈했을 때 3벳을 받으면?\n내 오픈 레인지가 타이트하므로 더 넓게 계속할 수 있어요.\n4벳 / 콜 / 폴드를 연습합니다.',
+        guideExample: '✅ 4벳: AA, KK (밸류) / AKo (블러프)\n✅ 콜: QQ, JJ, AQs\n❌ 폴드: ATo, KJo, 99 이하'
       },
       {
         id: '7-3', title: 'LP에서 vs 3bet', subtitle: '뒷자리에서 3벳 대응',

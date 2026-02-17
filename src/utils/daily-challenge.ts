@@ -1,6 +1,7 @@
 import { RFI_RANGES, FACING_RFI_RANGES, VS_3BET_RANGES } from '@/data/ranges';
 import { RANKS } from '@/data/constants';
 import { getCorrectAction_RFI, getCorrectAction_Facing, getCorrectAction_Vs3bet } from './correct-action';
+import { seededShuffle } from './shuffle';
 
 // Seeded random number generator (Mulberry32)
 function seededRandom(seed: number) {
@@ -63,7 +64,7 @@ export function generateDailyChallenge(dateStr: string): DailyChallengeData {
 
     const correctAction = getCorrectAction_RFI(hand, pos);
     const actionLabel = correctAction === 'raise' ? '레이즈' : correctAction === 'limp' ? '림프' : '폴드';
-    const options = pos === 'SB' ? ['레이즈', '림프', '폴드'] : ['레이즈', '폴드'];
+    const options = seededShuffle(pos === 'SB' ? ['레이즈', '림프', '폴드'] : ['레이즈', '폴드'], seed + 3);
 
     return {
       quizType: 'rfi_dynamic',
@@ -94,7 +95,7 @@ export function generateDailyChallenge(dateStr: string): DailyChallengeData {
       vsPosition: vsPos,
       hand,
       correctAnswer: actionLabel,
-      options: ['3bet', '콜', '폴드'],
+      options: seededShuffle(['3bet', '콜', '폴드'], seed + 3),
       explanation: `${vsPos}가 오픈한 상황에서 ${myPos}의 ${hand} — ${actionLabel === '3bet' ? '다시 올려서 압박!' : actionLabel === '콜' ? '따라가면서 기회를 노려요.' : '여기서는 접는 게 현명해요.'}`,
     };
   } else {
@@ -121,7 +122,7 @@ export function generateDailyChallenge(dateStr: string): DailyChallengeData {
       vsPosition: vsPos,
       hand,
       correctAnswer: actionLabel,
-      options: ['4bet', '콜', '폴드'],
+      options: seededShuffle(['4bet', '콜', '폴드'], seed + 3),
       explanation: `${pos}에서 오픈 후 3bet 받은 ${hand} — ${actionLabel === '4bet' ? '한 번 더 올려서 밀어붙여요!' : actionLabel === '콜' ? '따라가면서 다음 카드를 봐요.' : '3bet 앞에서는 접어야 해요.'}`,
     };
   }

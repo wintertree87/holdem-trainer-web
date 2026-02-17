@@ -7,6 +7,7 @@ import { generateHand, getHandNotation, getHandDescription } from '@/utils/hand'
 import { getCorrectAction_RFI, getCorrectAction_Facing, getCorrectAction_Vs3bet } from '@/utils/correct-action';
 import { generateFlop, analyzeBoardTexture, evaluateHandStrength, type BoardTexture, type HandStrength } from '@/utils/board';
 import { useSound } from '@/hooks/useSound';
+import { shuffleArray } from '@/utils/shuffle';
 import PokerTable from '@/components/PokerTable';
 import GlossaryTip from '@/components/GlossaryTip';
 import RangeChart from '@/components/RangeChart';
@@ -42,6 +43,7 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
   const [sessionWrong, setSessionWrong] = useState(0);
   const [dealKey, setDealKey] = useState(0);
   const [showRange, setShowRange] = useState(false);
+  const [shuffledButtons, setShuffledButtons] = useState<{ action: string; label: string; color: string }[]>([]);
   const resultRef = useRef<HTMLDivElement>(null);
   const { playCorrect, playWrong } = useSound();
 
@@ -68,17 +70,24 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
       const positions = ['UTG', 'UTG+1', 'UTG+2', 'LJ', 'HJ', 'CO', 'BTN', 'SB'];
       pos = positions[Math.floor(Math.random() * positions.length)];
       setPosition(pos);
+      setShuffledButtons(shuffleArray(
+        pos === 'SB'
+          ? [{ action: 'raise', label: '레이즈', color: 'from-green-600 to-green-500' }, { action: 'limp', label: '림프', color: 'from-blue-600 to-blue-500' }, { action: 'fold', label: '폴드', color: 'from-red-600 to-red-500' }]
+          : [{ action: 'raise', label: '레이즈', color: 'from-green-600 to-green-500' }, { action: 'fold', label: '폴드', color: 'from-red-600 to-red-500' }]
+      ));
     } else if (mode === 'facing') {
       const keys = Object.keys(FACING_RFI_RANGES);
       const key = keys[Math.floor(Math.random() * keys.length)];
       const [myP, , vsP] = key.split('_');
       pos = myP; vsPos = vsP;
       setPosition(pos); setVsPosition(vsPos);
+      setShuffledButtons(shuffleArray([{ action: '3bet', label: '3bet', color: 'from-purple-600 to-purple-500' }, { action: 'call', label: '콜', color: 'from-blue-600 to-blue-500' }, { action: 'fold', label: '폴드', color: 'from-red-600 to-red-500' }]));
     } else if (mode === 'vs3bet') {
       const positions = ['UTG', 'LJ', 'HJ', 'CO', 'BTN', 'SB'];
       pos = positions[Math.floor(Math.random() * positions.length)];
       vsPos = pos === 'SB' ? 'BB' : 'IP';
       setPosition(pos); setVsPosition(vsPos);
+      setShuffledButtons(shuffleArray([{ action: '4bet', label: '4bet', color: 'from-purple-600 to-purple-500' }, { action: 'call', label: '콜', color: 'from-blue-600 to-blue-500' }, { action: 'fold', label: '폴드', color: 'from-red-600 to-red-500' }]));
     } else if (mode === 'cbet') {
       const positions = ['CO', 'BTN'];
       pos = positions[Math.floor(Math.random() * positions.length)];
@@ -89,6 +98,7 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
       const bt = analyzeBoardTexture(flop);
       setBoardTexture(bt);
       setHandStrength(evaluateHandStrength(cards, flop, bt));
+      setShuffledButtons(shuffleArray([{ action: 'cbet', label: 'C-bet', color: 'from-green-600 to-green-500' }, { action: 'check', label: '체크', color: 'from-gray-600 to-gray-500' }]));
     }
   }, [mode, position]);
 
@@ -236,9 +246,9 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
           )}
 
           {/* Action Buttons */}
-          {!result && (
+          {!result && shuffledButtons.length > 0 && (
             <div className="flex gap-2 justify-center">
-              {getActionButtons().map(btn => (
+              {shuffledButtons.map(btn => (
                 <button key={btn.action} onClick={() => makeDecision(btn.action)}
                   className={`px-6 py-3 bg-gradient-to-br ${btn.color} rounded-xl text-white font-bold hover:scale-105 active:scale-[0.97] transition-all duration-200 shadow-lg`}>
                   {btn.label}

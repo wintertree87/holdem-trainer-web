@@ -162,7 +162,7 @@ export default function LessonQuiz({ lessonState, onAnswer, onNext, onAbort, hea
           <div className={`text-base font-bold mb-1.5 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
             {isCorrect ? (combo >= 5 ? '🔥 완벽한 흐름!' : combo >= 3 ? '연속 정답!' : '좋은 판단이에요') : '이번엔 아쉽네요'}
           </div>
-          <div className="text-sm text-gray-300 leading-6"><AutoGlossary text={scenario.explanation || ''} /></div>
+          <div className="text-sm text-gray-300 leading-7 whitespace-pre-line"><AutoGlossary text={scenario.explanation || ''} /></div>
 
           {/* Range Chart for dynamic quizzes */}
           {isDynamic && scenario.position && (

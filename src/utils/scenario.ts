@@ -3,6 +3,7 @@ import { RANKS } from '@/data/constants';
 import { SKILL_TREE } from '@/data/skill-tree';
 import type { Scenario } from '@/data/skill-tree';
 import { getCorrectAction_RFI, getCorrectAction_Facing, getCorrectAction_Vs3bet } from './correct-action';
+import { shuffleArray } from './shuffle';
 
 const ALL_HANDS: string[] = [];
 for (let i = 0; i < RANKS.length; i++) {
@@ -31,7 +32,7 @@ export function generateRfiScenarios(positions: string[], count: number) {
     scenarios.push({
       quizType: 'rfi_dynamic' as const,
       position: pos, hand, correctAction,
-      options: pos === 'SB' ? ['레이즈', '림프', '폴드'] : ['레이즈', '폴드'],
+      options: shuffleArray(pos === 'SB' ? ['레이즈', '림프', '폴드'] : ['레이즈', '폴드']),
       answer: actionLabel,
       explanation: generateRfiExplanation(hand, pos, correctAction),
     });
@@ -70,7 +71,7 @@ export function generateFacingScenarios(myPositions: string[], count: number) {
     scenarios.push({
       quizType: 'facing_dynamic' as const,
       position: myPos, vsPosition: vsPos, hand, correctAction,
-      options: ['3bet', '콜', '폴드'],
+      options: shuffleArray(['3bet', '콜', '폴드']),
       answer: actionLabel,
       explanation: generateFacingExplanation(hand, myPos, vsPos, correctAction, range),
     });
@@ -101,7 +102,7 @@ export function generateVs3betScenarios(positions: string[], count: number) {
     scenarios.push({
       quizType: 'vs3bet_dynamic' as const,
       position: pos, vsPosition: vsPos, hand, correctAction,
-      options: ['4bet', '콜', '폴드'],
+      options: shuffleArray(['4bet', '콜', '폴드']),
       answer: actionLabel,
       explanation: generateVs3betExplanation(hand, pos, correctAction, range),
     });
@@ -151,12 +152,12 @@ function generateRfiExplanation(hand: string, position: string, correctAction: s
   const handDesc = describeHand(hand);
 
   if (correctAction === 'raise') {
-    return `${hand}은(는) 이 자리(${position})에서 베팅해도 되는 패예요! 👍\n${handDesc ? handDesc + ' ' : ''}상위 ${pct}에 포함되니까 자신있게 레이즈!`;
+    return `🧠 생각 과정\n① 내 자리: ${position} → 상위 ${pct}까지 플레이 가능\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 결론: 레인지 안에 포함 → 레이즈!\n\n${position === 'BTN' ? '💡 만약 폴드했다면? 이 자리에서 이 패를 안 치면 돈 벌 기회를 버리는 거예요.' : '💡 만약 폴드했다면? 충분히 플레이할 수 있는 핸드를 접으면 장기적으로 손해예요.'}`;
   }
   if (correctAction === 'limp') {
-    return `${hand}은(는) SB에서 살짝 참여하는 게 좋아요.\n크게 올리기엔 부족하지만, 접기엔 아까운 핸드예요.\n적은 돈만 내고 다음 카드를 봐요.`;
+    return `🧠 생각 과정\n① 내 자리: SB → 이미 0.5BB 넣은 상태\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 결론: 크게 올리기엔 부족, 접기엔 아까움 → 림프!\n\n💡 만약 레이즈했다면? BB가 3벳하면 곤란해요. 이 핸드는 적은 돈으로 다음 카드를 보는 게 최선.\n💡 만약 폴드했다면? 이미 0.5BB 넣었고 BB만 남았으니, 이 정도 핸드는 싸게 참여할 만해요.`;
   }
-  return `${hand}은(는) 이 자리(${position})에서는 접는 게 맞아요.\n${posDesc}\n${handDesc ? handDesc + ' 하지만 ' : ''}이 자리에서 플레이하기엔 부족한 핸드예요. 더 좋은 기회를 기다리세요!`;
+  return `🧠 생각 과정\n① 내 자리: ${position} → ${posDesc}\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 결론: 레인지 밖 → 폴드가 맞아요\n\n💡 만약 레이즈했다면? 뒤에 남은 사람 중 하나가 더 좋은 패로 다시 올릴 확률이 높아요. 장기적으로 손해예요.`;
 }
 
 function generateFacingExplanation(hand: string, myPos: string, vsPos: string, correctAction: string, range: any): string {
@@ -164,15 +165,15 @@ function generateFacingExplanation(hand: string, myPos: string, vsPos: string, c
   const isValue = range.value?.includes(hand);
 
   if (correctAction === '3bet') {
-    if (isValue) {
-      return `${hand}은(는) 여기서 다시 올려야 해요! (3벳)\n${handDesc ? handDesc + ' ' : ''}상대(${vsPos})가 먼저 베팅했지만, 상위권 핸드이니까 판을 키우세요!`;
-    }
-    return `${hand}은(는) 여기서 다시 올려서 상대를 흔들어요! (3벳)\n최강 패는 아니지만, 상대가 포기하면 이득이에요.\n${hand.startsWith('A') ? '에이스가 있어서 상대가 AA/AK를 가질 확률을 줄여주기도 해요.' : ''}`;
+    const reason = isValue
+      ? '상위권 핸드니까 판을 키워야 해요'
+      : hand.startsWith('A') ? '에이스 블로커 + 상대 폴드 유도' : '상대 폴드를 유도하는 블러프';
+    return `🧠 생각 과정\n① 상황: ${vsPos}가 오픈 → 나(${myPos})의 차례\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 판단: ${reason} → 3벳!\n\n💡 만약 콜했다면? ${isValue ? '강한 핸드인데 콜만 하면 팟을 키울 기회를 놓쳐요.' : '이 핸드는 콜하면 포스트플랍에서 어려운 상황이 많아요. 3벳으로 지금 결판내는 게 나아요.'}\n💡 만약 폴드했다면? ${isValue ? '이 정도 핸드를 접으면 너무 타이트해요. 장기적으로 큰 손해!' : '블러프 3벳 기회를 놓치면 상대가 편하게 플레이하게 돼요.'}`;
   }
   if (correctAction === 'call') {
-    return `${hand}은(는) 여기서 따라가는 게 좋아요. (콜)\n다시 올리기엔(3벳) 아쉽고, 접기엔 아까운 핸드예요.\n${handDesc ? handDesc + ' ' : ''}다음 카드를 보면서 기회를 노려요!`;
+    return `🧠 생각 과정\n① 상황: ${vsPos}가 오픈 → 나(${myPos})의 차례\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 판단: 3벳하기엔 약간 부족, 폴드하기엔 아까움 → 콜!\n\n💡 만약 3벳했다면? 상대가 4벳하면 접어야 해요. 이 핸드는 콜로 포스트플랍을 보는 게 더 수익적이에요.\n💡 만약 폴드했다면? 충분히 플레이할 수 있는 핸드예요. 접으면 너무 타이트해져요.`;
   }
-  return `${hand}은(는) 여기서 접는 게 현명해요.\n상대가 ${vsPos}에서 베팅했다는 건 꽤 좋은 핸드를 가졌다는 뜻이에요.\n이 핸드로 대응하기엔 부족해요. 다음 기회를 기다리세요!`;
+  return `🧠 생각 과정\n① 상황: ${vsPos}가 오픈 → 나(${myPos})의 차례\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 판단: 상대 레인지에 대해 이 핸드는 너무 약함 → 폴드\n\n💡 만약 콜했다면? 포스트플랍에서 좋은 상황을 만들기 어렵고, 돈만 잃을 확률이 높아요.\n💡 만약 3벳했다면? 블러프 3벳은 특정 핸드(에이스 블로커 등)로 해야 효과적이에요. 이 핸드로는 비추!`;
 }
 
 function generateVs3betExplanation(hand: string, pos: string, correctAction: string, range: any): string {
@@ -180,15 +181,15 @@ function generateVs3betExplanation(hand: string, pos: string, correctAction: str
   const isValue = range.fourBetValue?.includes(hand);
 
   if (correctAction === '4bet') {
-    if (isValue) {
-      return `${hand}은(는) 프리미엄 핸드! 상대가 다시 올렸어도(3벳) 한 번 더 올려요! (4벳)\n${handDesc ? handDesc + ' ' : ''}이런 핸드는 자신있게 밀어붙여야 해요!`;
-    }
-    return `${hand}은(는) 여기서 한 번 더 올려서(4벳) 상대를 압박해요.\n${hand.startsWith('A') ? '에이스가 있어서 상대의 AA 가능성을 줄여주고, ' : ''}상대가 포기하면 큰 이득!`;
+    const reason = isValue
+      ? '프리미엄 핸드! 판을 더 키워야 해요'
+      : hand.startsWith('A') ? '에이스 블로커로 상대 AA 확률을 줄이면서 압박' : '블러프 4벳으로 상대 폴드 유도';
+    return `🧠 생각 과정\n① 상황: ${pos}에서 오픈 → 상대 3벳\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 판단: ${reason} → 4벳!\n\n💡 만약 콜했다면? ${isValue ? '이렇게 강한 핸드로 콜만 하면 팟을 키울 기회를 놓쳐요.' : '이 핸드는 콜하면 포스트플랍에서 어중간해져요. 4벳으로 지금 결판내세요.'}\n💡 만약 폴드했다면? ${isValue ? '절대 접으면 안 되는 핸드예요! 이런 핸드를 접으면 엄청난 손해.' : '블러프 4벳 기회를 놓치면 상대가 3벳을 남발하게 돼요.'}`;
   }
   if (correctAction === 'call') {
-    return `${hand}은(는) 상대가 다시 올렸지만(3벳), 접기엔 아까운 핸드예요.\n한 번 더 올리기엔(4벳) 부담스럽고, 여기선 따라가면서(콜) 다음 카드를 봐요.\n${handDesc}`;
+    return `🧠 생각 과정\n① 상황: ${pos}에서 오픈 → 상대 3벳\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 판단: 4벳하기엔 부담, 폴드하기엔 아까움 → 콜!\n\n💡 만약 4벳했다면? 상대가 올인하면 곤란해요. 이 핸드는 콜로 플랍을 보는 게 더 안전하고 수익적이에요.\n💡 만약 폴드했다면? 3벳 앞에서 너무 많이 접으면 상대가 3벳을 남발해요. 이 정도 핸드는 버텨야 해요.`;
   }
-  return `${hand}은(는) 상대가 다시 올렸으면(3벳) 여기서 접어야 해요.\n처음 베팅은 했지만, 상대가 다시 올렸다는 건 상위권 핸드를 가졌다는 신호예요.\n${handDesc ? handDesc + ' 하지만 ' : ''}이 상황에서 계속하기엔 부족한 핸드예요.`;
+  return `🧠 생각 과정\n① 상황: ${pos}에서 오픈 → 상대 3벳\n② 내 패: ${hand} ${handDesc ? '→ ' + handDesc : ''}\n③ 판단: 3벳 레인지에 대해 너무 약함 → 폴드\n\n💡 만약 콜했다면? 3벳 팟은 커요. 이 핸드로 계속하면 돈만 태울 확률이 높아요.\n💡 만약 4벳했다면? 블러프 4벳은 에이스 블로커 같은 특수한 핸드로 해야 해요. 이 핸드로는 위험해요.`;
 }
 
 export function generateTestOutScenarios(unitId: number): (Scenario & { quizType?: string; position?: string; hand?: string; vsPosition?: string })[] {

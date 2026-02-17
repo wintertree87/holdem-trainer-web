@@ -12,6 +12,7 @@ import { useStreak } from '@/hooks/useStreak';
 import { useLessonFlow } from '@/hooks/useLessonFlow';
 import { useHearts } from '@/hooks/useHearts';
 import { useGameSession, type MatchResult } from '@/hooks/useGameSession';
+import { usePracticeGame } from '@/hooks/usePracticeGame';
 import { type GameTier } from '@/data/game-config';
 import { createClient } from '@/lib/supabase-browser';
 
@@ -37,6 +38,7 @@ import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import GameTab from '@/components/game/GameTab';
 import GameTable from '@/components/game/GameTable';
 import MatchSummary from '@/components/game/MatchSummary';
+import PracticeGameResult from '@/components/learn/PracticeGameResult';
 import DailyHand from '@/components/DailyHand';
 
 type GameStats = {
@@ -60,6 +62,8 @@ export default function Home() {
   const heartsHook = useHearts();
   const lesson = useLessonFlow({ progress, updateLesson, addXP, consumeHeart: heartsHook.consumeHeart, canStartLesson: heartsHook.canStartLesson });
   const game = useGameSession();
+  const practiceGame = usePracticeGame();
+  const [practiceXpEarned, setPracticeXpEarned] = useState(0);
 
   // Post-login onboarding state
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean | null>(null);
@@ -168,6 +172,24 @@ export default function Home() {
     });
   }, [user]);
 
+  // Handle practice game completion
+  useEffect(() => {
+    if (!practiceGame.matchResult || practiceXpEarned > 0) return;
+    const xp = 5;
+    setPracticeXpEarned(xp);
+    addXP(xp);
+  }, [practiceGame.matchResult, practiceXpEarned, addXP]);
+
+  const handleStartPracticeGame = useCallback((unitId: number) => {
+    setPracticeXpEarned(0);
+    practiceGame.startPracticeMatch(unitId);
+  }, [practiceGame]);
+
+  const handleEndPracticeGame = useCallback(() => {
+    practiceGame.endPractice();
+    setPracticeXpEarned(0);
+  }, [practiceGame]);
+
   // Handle match completion
   useEffect(() => {
     if (!game.matchResult || matchXpEarned > 0) return;
@@ -196,7 +218,11 @@ export default function Home() {
     window.history.replaceState({ holdemApp: true }, '', '/');
 
     const handlePopState = (e: PopStateEvent) => {
-      if (game.match && !game.matchResult) {
+      if (practiceGame.match && !practiceGame.matchResult) {
+        practiceGame.endPractice();
+      } else if (practiceGame.matchResult) {
+        handleEndPracticeGame();
+      } else if (game.match && !game.matchResult) {
         // In game — quit match
         game.endMatch();
       } else if (game.matchResult) {
@@ -210,7 +236,7 @@ export default function Home() {
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [user, lesson.learnScreen, lesson.backToTree, game.match, game.matchResult, game.endMatch, handleEndMatch]);
+  }, [user, lesson.learnScreen, lesson.backToTree, game.match, game.matchResult, game.endMatch, handleEndMatch, practiceGame.match, practiceGame.matchResult, practiceGame.endPractice, handleEndPracticeGame]);
 
   // Loading
   if (userLoading || progressLoading || (user && onboardingCompleted === null)) {
@@ -234,6 +260,53 @@ export default function Home() {
         updateLesson={(lessonId, data) => updateLesson(lessonId, data)}
         markOnboardingCompleted={markOnboardingCompleted}
       />
+    );
+  }
+
+  // Practice game in progress — full-screen game UI
+  if (practiceGame.match && !practiceGame.matchResult) {
+    return (
+      <div className="max-w-[500px] mx-auto px-4 py-4 min-h-screen">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm text-gray-400">
+            🎯 실전 연습 — 핸드 {practiceGame.match.handNumber}/{practiceGame.match.config.handsCount}
+          </div>
+          <button onClick={practiceGame.endPractice} className="text-xs text-gray-500 hover:text-gray-300 transition">
+            나가기
+          </button>
+        </div>
+        <GameTable
+          match={{
+            tier: { id: 'practice', name: '실전 연습', emoji: '🎯', description: '', unlockUnitId: 0, botLevel: '', xpBase: 0, xpWin: 0 },
+            handNumber: practiceGame.match.handNumber,
+            heroStack: practiceGame.match.heroStack,
+            botStack: practiceGame.match.botStack,
+            currentHand: practiceGame.match.currentHand,
+            matchHistory: [],
+            matchComplete: false,
+            heroPosition: practiceGame.match.heroPosition,
+            botPosition: practiceGame.match.botPosition,
+          }}
+          showResult={practiceGame.showResult}
+          onHeroAction={practiceGame.handleHeroAction}
+          onShowResult={practiceGame.handleShowResult}
+          onNextHand={practiceGame.nextHand}
+          onQuit={practiceGame.endPractice}
+        />
+      </div>
+    );
+  }
+
+  // Practice game complete — show results with coach comments
+  if (practiceGame.matchResult) {
+    return (
+      <div className="max-w-[500px] mx-auto px-4 py-4 min-h-screen">
+        <PracticeGameResult
+          result={practiceGame.matchResult}
+          xpEarned={practiceXpEarned}
+          onClose={handleEndPracticeGame}
+        />
+      </div>
     );
   }
 
@@ -311,6 +384,7 @@ export default function Home() {
                 onToggleUnit={lesson.toggleUnit}
                 onStartLesson={lesson.startLesson}
                 onStartTestOut={lesson.startTestOut}
+                onStartPracticeGame={handleStartPracticeGame}
                 getUnitStatus={lesson.getUnitStatus}
                 isLessonUnlocked={lesson.isLessonUnlocked}
               />
@@ -388,6 +462,7 @@ export default function Home() {
               unitId={lesson.activeUnitId}
               onStartLesson={lesson.startLesson}
               onBackToTree={lesson.backToTree}
+              onStartPracticeGame={handleStartPracticeGame}
               isLessonUnlocked={lesson.isLessonUnlocked}
               isTestOut={lesson.testOutUnitId !== null}
               levelTitle={currentLevel.title}

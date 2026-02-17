@@ -21,7 +21,16 @@ export default function GuideCard({ lesson, unitEmoji, onStart, isFirstAttempt =
 
       {/* Collapsible tip */}
       {showTip ? (
-        <div className="text-sm leading-7 text-gray-300 text-left mb-6 whitespace-pre-line animate-slide-up">{lesson.guideTip}</div>
+        <>
+          <div className="text-sm leading-7 text-gray-300 text-left mb-4 whitespace-pre-line animate-slide-up">{lesson.guideTip}</div>
+          {lesson.guideExample && (
+            <div className="text-sm text-left mb-6 bg-white/5 rounded-lg p-3 border border-indigo-500/20 animate-slide-up">
+              <div className="text-xs text-indigo-400 font-bold mb-1.5">예시</div>
+              <div className="text-gray-300 leading-6 whitespace-pre-line">{lesson.guideExample}</div>
+            </div>
+          )}
+          {!lesson.guideExample && <div className="mb-2" />}
+        </>
       ) : (
         <button
           onClick={() => setShowTip(true)}
