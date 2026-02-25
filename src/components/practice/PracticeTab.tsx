@@ -285,37 +285,49 @@ export default function PracticeTab({ onRecordResult, onAddWrongNote, onIncremen
               </div>
               <div className="text-sm text-gray-300 whitespace-pre-line leading-relaxed">{result.explanation}</div>
 
-              {/* Range Chart Toggle (RFI/Facing/vs3bet only) */}
+              {/* Range Chart Button (RFI/Facing/vs3bet only) */}
               {mode !== 'cbet' && (
                 <div className="mt-2">
                   <button
-                    onClick={() => setShowRange(v => !v)}
+                    onClick={() => setShowRange(true)}
                     className="text-xs text-indigo-400 hover:text-indigo-300 transition"
                   >
-                    {showRange ? '레인지 접기 ▲' : '레인지 보기 ▼'}
+                    레인지 보기 ▶
                   </button>
-                  {showRange && (
-                    <RangeChart
-                      mode={mode === 'facing' ? 'facing' : mode === 'vs3bet' ? 'vs3bet' : 'rfi'}
-                      position={position}
-                      vsPosition={vsPosition || undefined}
-                      currentHand={notation}
-                    />
-                  )}
                 </div>
               )}
             </div>
           )}
 
-          {/* 다음 핸드 — 하단 고정 */}
+          {/* 다음 핸드 */}
           {result && (
-            <div className="sticky bottom-0 pt-2 pb-4 -mx-4 px-4" style={{ background: 'linear-gradient(to top, var(--background) 60%, transparent)' }}>
+            <div className="pt-2 pb-4">
               <button onClick={newHand} className="w-full py-3 bg-indigo-500 rounded-xl text-white font-bold hover:bg-indigo-600 active:scale-[0.98] transition shadow-lg shadow-indigo-500/20">
                 다음 핸드 →
               </button>
             </div>
           )}
         </>
+      )}
+
+      {/* Range Chart Modal */}
+      {showRange && mode !== 'cbet' && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4" onClick={() => setShowRange(false)}>
+          <div className="w-full max-w-[420px]" onClick={e => e.stopPropagation()}>
+            <RangeChart
+              mode={mode === 'facing' ? 'facing' : mode === 'vs3bet' ? 'vs3bet' : 'rfi'}
+              position={position}
+              vsPosition={vsPosition || undefined}
+              currentHand={notation}
+            />
+            <button
+              onClick={() => setShowRange(false)}
+              className="w-full mt-3 py-2.5 bg-white/10 rounded-xl text-white font-medium hover:bg-white/20 transition"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

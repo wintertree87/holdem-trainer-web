@@ -1,15 +1,17 @@
 'use client';
 
+// Standard poker table layout: BTN at bottom, seats clockwise
+// BTN → SB → BB → UTG → UTG+1 → UTG+2 → LJ → HJ → CO
 const SEAT_POSITIONS: { pos: string; x: number; y: number }[] = [
-  { pos: 'BTN', x: 85, y: 62 },
-  { pos: 'SB',  x: 72, y: 18 },
-  { pos: 'BB',  x: 50, y: 8 },
-  { pos: 'UTG', x: 28, y: 18 },
-  { pos: 'UTG+1', x: 15, y: 38 },
-  { pos: 'UTG+2', x: 15, y: 62 },
-  { pos: 'LJ',  x: 28, y: 82 },
-  { pos: 'HJ',  x: 50, y: 92 },
-  { pos: 'CO',  x: 72, y: 82 },
+  { pos: 'BTN',   x: 72, y: 82 },
+  { pos: 'SB',    x: 28, y: 82 },
+  { pos: 'BB',    x: 15, y: 62 },
+  { pos: 'UTG',   x: 15, y: 38 },
+  { pos: 'UTG+1', x: 28, y: 18 },
+  { pos: 'UTG+2', x: 50, y: 8 },
+  { pos: 'LJ',    x: 72, y: 18 },
+  { pos: 'HJ',    x: 85, y: 38 },
+  { pos: 'CO',    x: 85, y: 62 },
 ];
 
 type Props = {
@@ -29,8 +31,8 @@ export default function PokerTable({ heroPosition, villainPosition, className = 
         {/* Dealer chip */}
         {SEAT_POSITIONS.filter(s => s.pos === 'BTN').map(s => (
           <g key="dealer">
-            <circle cx={s.x - 8} cy={s.y - 3} r="3" fill="#fbbf24" stroke="#f59e0b" strokeWidth="0.5" />
-            <text x={s.x - 8} y={s.y - 1.5} textAnchor="middle" fill="#78350f" fontSize="3" fontWeight="bold">D</text>
+            <circle cx={s.x} cy={s.y - 11} r="3" fill="#fbbf24" stroke="#f59e0b" strokeWidth="0.5" />
+            <text x={s.x} y={s.y - 9.5} textAnchor="middle" fill="#78350f" fontSize="3" fontWeight="bold">D</text>
           </g>
         ))}
 
