@@ -247,10 +247,49 @@ export function useMultiplayerSession() {
         };
       }
 
-      // Next hand — rotate button
-      const newBtnIndex = (prev.btnIndex + 1) % 6;
+      // 스택 0인 봇 탈락 처리 — hero는 위에서 이미 체크함
+      const activePlayers = newPlayers.filter(p => p.id === 'hero' || p.stack > 0);
+      const activeBots = activePlayers.filter(p => p.id !== 'hero');
+
+      // 봇이 모두 탈락(스택 0)하면 hero 우승으로 매치 종료
+      if (activeBots.length === 0) {
+        const wins = newHistory.filter(h => {
+          if (!h.result) return false;
+          return h.result.pots.some(pot => pot.winners.includes('hero'));
+        }).length;
+        const losses = newHistory.filter(h => {
+          if (!h.result) return false;
+          return !h.result.pots.some(pot => pot.winners.includes('hero'));
+        }).length;
+        const heroStack = activePlayers.find(p => p.id === 'hero')!.stack;
+        const bbWon = heroStack - STARTING_STACK;
+        const ranking = [...newPlayers].sort((a, b) => b.stack - a.stack);
+
+        setMatchResult({
+          tier: prev.tier,
+          heroFinalStack: heroStack,
+          handsPlayed: newHistory.length,
+          bbWon,
+          wins,
+          losses,
+          ranking,
+          history: newHistory,
+        });
+
+        return {
+          ...prev,
+          handNumber: newHandNumber,
+          players: newPlayers,
+          matchHistory: newHistory,
+          matchComplete: true,
+          currentHand: null,
+        };
+      }
+
+      // Next hand — rotate button (스택 0인 봇 제외)
+      const newBtnIndex = (prev.btnIndex + 1) % activePlayers.length;
       const stacks = new Map<PlayerId, number>();
-      newPlayers.forEach(p => stacks.set(p.id, p.stack));
+      activePlayers.forEach(p => stacks.set(p.id, p.stack));
 
       const newHand = initMPHand(stacks, newBtnIndex);
       const updated: MPMatchState = {

@@ -29,7 +29,7 @@ const EXTRA_VS3BET: Record<string, string[]> = {
 
 export function decideMPBotAction(state: MPGameState, botId: PlayerId): GameAction {
   const available = getAvailableMPActions(state.bets, botId);
-  if (available.length === 0) return { type: 'check' };
+  if (available.length === 0) return { type: 'fold' };
   if (available.length === 1) return available[0];
 
   if (state.street === 'preflop') {

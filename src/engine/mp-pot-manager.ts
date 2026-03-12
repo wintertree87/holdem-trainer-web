@@ -41,13 +41,15 @@ export function initMPBets(
     if (pos === 'SB') blind = Math.min(SB_SIZE, stack);
     else if (pos === 'BB') blind = Math.min(BB_SIZE, stack);
 
+    // Stack 0인 플레이어는 처음부터 folded 처리 (blind 없음)
+    const isZeroStack = stack <= 0;
     players.push({
       id,
-      stack: stack - blind,
-      streetBet: blind,
-      totalInvested: blind,
-      folded: false,
-      isAllIn: stack - blind <= 0 && blind > 0,
+      stack: isZeroStack ? 0 : stack - blind,
+      streetBet: isZeroStack ? 0 : blind,
+      totalInvested: isZeroStack ? 0 : blind,
+      folded: isZeroStack,
+      isAllIn: !isZeroStack && stack - blind <= 0 && blind > 0,
     });
   }
 
