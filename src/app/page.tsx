@@ -526,19 +526,14 @@ export default function Home() {
           nickname={user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || '유저'}
           totalXP={totalXP}
           currentLevel={currentLevel}
+          nextLevel={nextLevel}
+          progressPct={progressPct}
           currentStreak={currentStreak}
           bestStreak={bestStreak}
           weekDays={weekDays}
           progress={progress}
-          gameStats={gameStats.reduce(
-            (acc, s) => ({
-              wins: acc.wins + s.wins,
-              losses: acc.losses + s.losses,
-              ties: acc.ties + s.ties,
-              totalBbWon: acc.totalBbWon + s.totalBbWon,
-            }),
-            { wins: 0, losses: 0, ties: 0, totalBbWon: 0 }
-          )}
+          practiceStats={stats}
+          gameStatsByTier={gameStats}
           todayCount={todayCount}
           joinDate={joinDate}
           muted={muted}
